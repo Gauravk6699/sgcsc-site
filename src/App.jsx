@@ -9,6 +9,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import './index.css';
 
+import CertificateVerify from './pages/CertificateVerify';
 import FranchiseProfile from "./pages/FranchiseProfile";
 import FranchiseCredits from "./pages/FranchiseCredits";
 import FranchiseDashboard from "./pages/FranchiseDashboard";
@@ -149,6 +150,8 @@ export default function App() {
     </StudentProtectedRoute>
   }
 />
+
+<Route path="/verify/:certNo" element={<CertificateVerify />} />
 
 <Route
   path="/student/admit-card"
