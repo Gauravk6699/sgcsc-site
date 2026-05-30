@@ -3,7 +3,7 @@ import axios from "axios";
 /* ===================== BASE URL ===================== */
 const API_BASE =
   process.env.REACT_APP_API_URL ||
-  "https://sgcsc-backend.onrender.com/api";
+  "https://sgcsc-backend-dzp4.onrender.com/api";
 
 /* ===================== AXIOS INSTANCE ===================== */
 const api = axios.create({
