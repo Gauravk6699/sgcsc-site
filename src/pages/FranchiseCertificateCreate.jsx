@@ -22,9 +22,12 @@ export default function FranchiseCertificateCreate() {
   const [grade, setGrade] = useState("");
   const [certificateNumber, setCertificateNumber] = useState("");
   const [issueDate, setIssueDate] = useState("");
+  const [courseDuration, setCourseDuration] = useState("");
+  const [photo, setPhoto] = useState("");
 
   // State management
   const [courses, setCourses] = useState([]);
+  const [franchiseName, setFranchiseName] = useState("");
   const [saving, setSaving] = useState(false);
   const [loadingStudent, setLoadingStudent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -34,18 +37,24 @@ export default function FranchiseCertificateCreate() {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 20 }, (_, i) => currentYear - 10 + i);
 
-  // Fetch courses on mount
+  // Fetch courses and franchise profile on mount
   useEffect(() => {
-    const fetchCourses = async () => {
+    const fetchInitialData = async () => {
       try {
-        const res = await API.get("/franchise/courses");
-        const data = Array.isArray(res.data) ? res.data : [];
+        const [coursesRes, profileRes] = await Promise.all([
+          API.get("/franchise/courses"),
+          API.get("/franchise-profile/me"),
+        ]);
+        const data = Array.isArray(coursesRes.data) ? coursesRes.data : [];
         setCourses(data);
+
+        const profile = profileRes.data?.data || profileRes.data;
+        if (profile?.instituteName) setFranchiseName(profile.instituteName);
       } catch (err) {
-        console.error("Failed to fetch courses:", err);
+        console.error("Failed to fetch initial data:", err);
       }
     };
-    fetchCourses();
+    fetchInitialData();
   }, []);
 
   // Load existing certificate for edit
@@ -71,6 +80,8 @@ export default function FranchiseCertificateCreate() {
           setEnrollmentNumber(cert.enrollmentNumber || "");
           setCertificateNumber(cert.certificateNumber || "");
           setIssueDate(cert.issueDate ? cert.issueDate.split("T")[0] : "");
+          setCourseDuration(cert.courseDuration || "");
+          setPhoto(cert.photo || "");
         }
       } catch (err) {
         console.error("Failed to load certificate:", err);
@@ -84,7 +95,7 @@ export default function FranchiseCertificateCreate() {
     fetchCertificate();
   }, [isEditMode, certificateId]);
 
-  // Lookup student by enrollment number
+  // Lookup student by enrollment number — also captures photo URL for certificate
   const handleLookupStudent = async () => {
     if (!enrollmentNumber.trim()) {
       setMessageType("danger");
@@ -100,6 +111,7 @@ export default function FranchiseCertificateCreate() {
       const students = Array.isArray(studentsRes.data) ? studentsRes.data : [];
       const student = students.find(
         (s) =>
+          s.enrollmentNo === enrollmentNumber.trim() ||
           s.enrollment === enrollmentNumber.trim() ||
           s.rollNumber === enrollmentNumber.trim()
       );
@@ -108,6 +120,7 @@ export default function FranchiseCertificateCreate() {
         setName(student.name || "");
         setFatherName(student.fatherName || "");
         setCourseName(student.courseName || "");
+        setPhoto(student.photo || "");
 
         if (student.sessionStart) {
           const startYear = new Date(student.sessionStart).getFullYear();
@@ -122,67 +135,35 @@ export default function FranchiseCertificateCreate() {
         setMessage("Student details loaded successfully!");
       } else {
         setMessageType("danger");
-        setMessage("Student not found with this enrollment number.");
+        setMessage("Student not found in your franchise with this enrollment number.");
       }
     } catch (err) {
       console.error("Student lookup error:", err);
       setMessageType("danger");
-      setMessage(
-        err.userMessage || "Student not found with this enrollment number."
-      );
+      setMessage(err.userMessage || "Student not found with this enrollment number.");
     } finally {
       setLoadingStudent(false);
     }
   };
 
   const validate = () => {
-    if (!enrollmentNumber.trim()) {
-      setMessageType("danger");
-      setMessage("Enrollment Number is required.");
-      return false;
-    }
-    if (!name.trim()) {
-      setMessageType("danger");
-      setMessage("Name is required.");
-      return false;
-    }
-    if (!fatherName.trim()) {
-      setMessageType("danger");
-      setMessage("Father's Name is required.");
-      return false;
-    }
-    if (!courseName.trim()) {
-      setMessageType("danger");
-      setMessage("Course Name is required.");
-      return false;
-    }
-    if (!sessionFrom) {
-      setMessageType("danger");
-      setMessage("Session From is required.");
-      return false;
-    }
-    if (!sessionTo) {
-      setMessageType("danger");
-      setMessage("Session To is required.");
-      return false;
-    }
-    if (!grade.trim()) {
-      setMessageType("danger");
-      setMessage("Grade is required.");
-      return false;
-    }
-    if (!certificateNumber.trim()) {
-      setMessageType("danger");
-      setMessage("Certificate Number is required.");
-      return false;
-    }
-    if (!issueDate) {
-      setMessageType("danger");
-      setMessage("Issue Date is required.");
-      return false;
-    }
+    if (!enrollmentNumber.trim()) return showError("Enrollment Number is required.");
+    if (!name.trim()) return showError("Name is required.");
+    if (!fatherName.trim()) return showError("Father's Name is required.");
+    if (!courseName.trim()) return showError("Course Name is required.");
+    if (!sessionFrom) return showError("Session From is required.");
+    if (!sessionTo) return showError("Session To is required.");
+    if (!grade.trim()) return showError("Grade is required.");
+    if (!certificateNumber.trim()) return showError("Certificate Number is required.");
+    if (!issueDate) return showError("Issue Date is required.");
     return true;
   };
+
+  function showError(msg) {
+    setMessageType("danger");
+    setMessage(msg);
+    return false;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -203,6 +184,8 @@ export default function FranchiseCertificateCreate() {
         certificateNumber: certificateNumber.trim(),
         issueDate,
         dob: dob || null,
+        courseDuration: courseDuration.trim(),
+        photo: photo || "",
       };
 
       if (isEditMode && certificateId) {
@@ -212,12 +195,12 @@ export default function FranchiseCertificateCreate() {
       } else {
         await API.post("/franchise/certificates", payload);
         setMessageType("success");
-        setMessage("Certificate created successfully.");
+        setMessage("Certificate created successfully. You can now download it with the QR code from the certificates list.");
       }
 
       setTimeout(() => {
         navigate("/franchise/certificates");
-      }, 1000);
+      }, 1500);
     } catch (err) {
       console.error("create certificate error:", err);
       setMessageType("danger");
@@ -231,7 +214,6 @@ export default function FranchiseCertificateCreate() {
     }
   };
 
-  // FIX: replaced broken loading spinner (used undefined Sidebar/franchise) with FranchiseLayout
   if (loading) {
     return (
       <FranchiseLayout>
@@ -264,6 +246,12 @@ export default function FranchiseCertificateCreate() {
           Back to Certificates
         </button>
       </div>
+
+      {franchiseName && (
+        <div className="alert alert-info py-2 mb-3">
+          Centre name on certificate: <strong>{franchiseName}</strong>
+        </div>
+      )}
 
       {message && (
         <div className={`alert alert-${messageType}`} role="alert">
@@ -302,24 +290,20 @@ export default function FranchiseCertificateCreate() {
                 )}
               </div>
               <small className="text-muted">
-                Enter enrollment number and click Lookup to auto-fill student
-                details
+                Click Lookup to auto-fill student details and photo
               </small>
             </div>
 
             {/* Date of Birth */}
             <div className="col-md-6">
-              <label className="form-label">
-                Date of Birth <span className="text-danger">*</span>
-              </label>
+              <label className="form-label">Date of Birth</label>
               <input
                 type="date"
                 className="form-control"
                 value={dob}
                 onChange={(e) => setDob(e.target.value)}
-                required
               />
-              <small className="text-muted">Required for public verification</small>
+              <small className="text-muted">Used for public verification</small>
             </div>
 
             <div className="col-md-6">
@@ -366,6 +350,19 @@ export default function FranchiseCertificateCreate() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Course Duration */}
+            <div className="col-md-6">
+              <label className="form-label">Course Duration</label>
+              <input
+                type="text"
+                className="form-control"
+                value={courseDuration}
+                onChange={(e) => setCourseDuration(e.target.value)}
+                placeholder="e.g., 6 Months, 1 Year"
+              />
+              <small className="text-muted">Printed on the certificate</small>
             </div>
 
             <div className="col-md-3">
@@ -431,6 +428,9 @@ export default function FranchiseCertificateCreate() {
                 onChange={(e) => setCertificateNumber(e.target.value)}
                 required
               />
+              <small className="text-muted">
+                Must be globally unique — used for QR code verification
+              </small>
             </div>
 
             <div className="col-md-6">
