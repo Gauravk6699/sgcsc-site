@@ -99,9 +99,13 @@ export default function FranchiseIdCardCreate() {
     setAddress(student.address || "");
     setPhoto(student.photo || "");
     if (student.dob) setDateOfBirth(new Date(student.dob).toISOString().split("T")[0]);
-    if (student.courseName) setCourseName(student.courseName);
-    if (student.sessionStart) setSessionFrom(new Date(student.sessionStart).getFullYear().toString());
-    if (student.sessionEnd) setSessionTo(new Date(student.sessionEnd).getFullYear().toString());
+    const c0 = student.courses?.[0];
+    const cName = student.courseName || c0?.courseName || "";
+    const sStart = student.sessionStart || c0?.sessionStart;
+    const sEnd = student.sessionEnd || c0?.sessionEnd;
+    if (cName) setCourseName(cName);
+    if (sStart) setSessionFrom(new Date(sStart).getFullYear().toString());
+    if (sEnd) setSessionTo(new Date(sEnd).getFullYear().toString());
     setMessage("");
   };
 
@@ -128,9 +132,13 @@ export default function FranchiseIdCardCreate() {
         setAddress(student.address || "");
         setPhoto(student.photo || "");
         if (student.dob) setDateOfBirth(new Date(student.dob).toISOString().split("T")[0]);
-        if (student.courseName) setCourseName(student.courseName);
-        if (student.sessionStart) setSessionFrom(new Date(student.sessionStart).getFullYear().toString());
-        if (student.sessionEnd) setSessionTo(new Date(student.sessionEnd).getFullYear().toString());
+        const c0 = student.courses?.[0];
+        const cName = student.courseName || c0?.courseName || "";
+        const sStart = student.sessionStart || c0?.sessionStart;
+        const sEnd = student.sessionEnd || c0?.sessionEnd;
+        if (cName) setCourseName(cName);
+        if (sStart) setSessionFrom(new Date(sStart).getFullYear().toString());
+        if (sEnd) setSessionTo(new Date(sEnd).getFullYear().toString());
         setMessageType("success");
         setMessage("Student details loaded.");
       } else {

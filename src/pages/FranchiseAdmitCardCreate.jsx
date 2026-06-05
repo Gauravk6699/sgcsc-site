@@ -92,8 +92,10 @@ export default function FranchiseAdmitCardCreate() {
     setMotherName(student.motherName || "");
     setRollNumber(student.rollNumber || "");
     setPhoto(student.photo || "");
-    if (student.courseName) setCourseName(student.courseName);
     setEnrollmentInput(student.enrollmentNo || "");
+    const c0 = student.courses?.[0];
+    const cName = student.courseName || c0?.courseName || "";
+    if (cName) setCourseName(cName);
     setMessage("");
   };
 
@@ -117,7 +119,9 @@ export default function FranchiseAdmitCardCreate() {
         setMotherName(student.motherName || "");
         setRollNumber(student.rollNumber || "");
         setPhoto(student.photo || "");
-        if (student.courseName) setCourseName(student.courseName);
+        const c0 = student.courses?.[0];
+        const cName = student.courseName || c0?.courseName || "";
+        if (cName) setCourseName(cName);
         setMessageType("success");
         setMessage("Student details loaded.");
       } else {

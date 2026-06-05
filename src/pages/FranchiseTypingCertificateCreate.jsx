@@ -97,10 +97,14 @@ export default function FranchiseCertificateCreate() {
     setEnrollmentNumber(student.enrollmentNo || "");
     setName(student.name || "");
     setFatherName(student.fatherName || "");
-    setCourseName(student.courseName || "");
     if (student.dob) setDob(new Date(student.dob).toISOString().split("T")[0]);
-    if (student.sessionStart) setSessionFrom(new Date(student.sessionStart).getFullYear().toString());
-    if (student.sessionEnd) setSessionTo(new Date(student.sessionEnd).getFullYear().toString());
+    const c0 = student.courses?.[0];
+    const cName = student.courseName || c0?.courseName || "";
+    const sStart = student.sessionStart || c0?.sessionStart;
+    const sEnd = student.sessionEnd || c0?.sessionEnd;
+    if (cName) setCourseName(cName);
+    if (sStart) setSessionFrom(new Date(sStart).getFullYear().toString());
+    if (sEnd) setSessionTo(new Date(sEnd).getFullYear().toString());
     setMessage("");
   };
 
@@ -129,14 +133,11 @@ export default function FranchiseCertificateCreate() {
         setFatherName(student.fatherName || "");
         setCourseName(student.courseName || "");
 
-        if (student.sessionStart) {
-          const startYear = new Date(student.sessionStart).getFullYear();
-          setSessionFrom(startYear.toString());
-        }
-        if (student.sessionEnd) {
-          const endYear = new Date(student.sessionEnd).getFullYear();
-          setSessionTo(endYear.toString());
-        }
+        const c0 = student.courses?.[0];
+        const sStart = student.sessionStart || c0?.sessionStart;
+        const sEnd = student.sessionEnd || c0?.sessionEnd;
+        if (sStart) setSessionFrom(new Date(sStart).getFullYear().toString());
+        if (sEnd) setSessionTo(new Date(sEnd).getFullYear().toString());
 
         setMessageType("success");
         setMessage("Student details loaded successfully!");
