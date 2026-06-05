@@ -397,7 +397,8 @@ export default function FranchiseAddStudent() {
     } catch (err) {
       console.error("student error:", err);
       setError(
-        err.userMessage ||
+        err.response?.data?.message ||
+          err.userMessage ||
           (isEditMode ? "Failed to update student" : "Failed to add student")
       );
     } finally {
