@@ -179,7 +179,7 @@ export default function StudentProfile() {
         ? `${cert.name} S/O, D/O, W/O ${cert.fatherName}`
         : cert.name;
       await window.CertificateGenerator.download({
-        atcCode: cert.centerName || cert.atcName || "",
+        centerName: cert.centerName || cert.atcName || "",
         studentNameCombined,
         courseName: cert.courseName,
         grade: cert.grade,
