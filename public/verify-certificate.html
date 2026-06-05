@@ -138,8 +138,11 @@
   <footer>This verification is provided by SGCSC. Scan result is real-time.</footer>
 
 <script>
-  // ── Read certificate number from URL path: /verify/<certNo> ───────────────
-  const pathParts = window.location.pathname.split('/');
+  // ── Detect certificate type from URL path ──────────────────────────────────
+  // /verify/<certNo>         → student certificate
+  // /verify/typing/<certNo>  → typing certificate
+  const pathParts = window.location.pathname.split('/').filter(Boolean);
+  const isTyping  = pathParts.includes('typing');
   const certNo    = decodeURIComponent(pathParts[pathParts.length - 1] || '');
 
   function fmtDate(d) {
@@ -157,7 +160,7 @@
       </div>`;
   }
 
-  function showValid(cert) {
+  function showValidStudent(cert) {
     document.getElementById('card').innerHTML = `
       <div class="badge valid">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -178,6 +181,32 @@
         ${field('Institute',        cert.instituteName || cert.centerName, true)}
         ${field('Enrollment No.',   cert.enrollmentNumber || cert.enrollmentNo)}
         ${field('Certificate No.',  cert.certificateNumber || cert.certificateNo)}
+      </div>`;
+  }
+
+  function showValidTyping(cert) {
+    document.getElementById('card').innerHTML = `
+      <div class="badge valid">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        Typing Certificate Verified ✓
+      </div>
+      <div class="cert-no-tag">Cert No: ${certNo}</div>
+      <div class="cert-title">${cert.studentName || 'Student'}</div>
+      <div class="field-grid">
+        ${field('Father / Husband',  cert.fatherHusbandName)}
+        ${field('Mother',            cert.motherName)}
+        ${field('Computer Typing',   cert.computerTyping)}
+        ${field('Words Per Minute',  cert.wordsPerMinute)}
+        ${field('Grade',             cert.grade)}
+        ${field('Session From',      cert.sessionFrom)}
+        ${field('Session To',        cert.sessionTo)}
+        ${field('Date of Issue',     fmtDate(cert.dateOfIssue))}
+        ${field('Study Centre',      cert.studyCentre, true)}
+        ${field('Enrollment No.',    cert.enrollmentNumber)}
+        ${field('Certificate No.',   cert.certificateNo)}
       </div>`;
   }
 
@@ -212,22 +241,31 @@
     if (!certNo) { showError('No certificate number in URL.'); return; }
 
     try {
-      const res = await fetch('/verify/certificate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ certNo: certNo })
-      });
-      
-      if (!res.ok) {
-        showInvalid();
-        return;
-      }
-      
-      const data = await res.json();
-      if (data.success && data.data) {
-        showValid(data.data);
+      let data;
+      if (isTyping) {
+        // Typing certificate: GET /verify/typing-certificate/:certNo
+        const res = await fetch(`/verify/typing-certificate/${encodeURIComponent(certNo)}`);
+        if (!res.ok) { showInvalid(); return; }
+        data = await res.json();
+        if (data.success && data.data) {
+          showValidTyping(data.data);
+        } else {
+          showInvalid();
+        }
       } else {
-        showInvalid();
+        // Student certificate: POST /verify/certificate
+        const res = await fetch('/verify/certificate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ certNo: certNo })
+        });
+        if (!res.ok) { showInvalid(); return; }
+        data = await res.json();
+        if (data.success && data.data) {
+          showValidStudent(data.data);
+        } else {
+          showInvalid();
+        }
       }
     } catch (err) {
       console.error('Verification error:', err);
