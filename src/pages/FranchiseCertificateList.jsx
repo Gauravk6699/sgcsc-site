@@ -77,8 +77,8 @@ export default function FranchiseCertificateList() {
         dateOfIssue: cert.issueDate || cert.dateOfIssue || "",
         photo: cert.photo || "",
         courseDuration: cert.courseDuration || "",
-        coursePeriodFrom: cert.coursePeriodFrom || "",
-        coursePeriodTo: cert.coursePeriodTo || "",
+        coursePeriodFrom: cert.coursePeriodFrom || cert.sessionFrom || "",
+        coursePeriodTo: cert.coursePeriodTo || cert.sessionTo || "",
       };
 
       // Load template if not already loaded
