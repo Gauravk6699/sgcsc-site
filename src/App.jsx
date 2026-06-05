@@ -29,6 +29,12 @@ import FranchiseCertificateCreate from "./pages/FranchiseCertificateCreate";
 
 import FranchiseTypingCertificateList from "./pages/FranchiseTypingCertificateList";
 import FranchiseTypingCertificateCreate from "./pages/FranchiseTypingCertificateCreate";
+import FranchiseIdCardCreate from "./pages/FranchiseIdCardCreate";
+import FranchiseIdCardList from "./pages/FranchiseIdCardList";
+import FranchiseAdmitCardCreate from "./pages/FranchiseAdmitCardCreate";
+import FranchiseAdmitCardList from "./pages/FranchiseAdmitCardList";
+import FranchiseMarksheetCreate from "./pages/FranchiseMarksheetCreate";
+import FranchiseMarksheetList from "./pages/FranchiseMarksheetList";
 import FranchiseProtectedRoute from "./components/FranchiseProtectedRoute";
 
 
@@ -355,6 +361,57 @@ export default function App() {
   element={
     <FranchiseProtectedRoute>
       <FranchiseCertificateCreate />
+    </FranchiseProtectedRoute>
+  }
+/>
+
+<Route
+  path="/franchise/id-cards"
+  element={
+    <FranchiseProtectedRoute>
+      <FranchiseIdCardList />
+    </FranchiseProtectedRoute>
+  }
+/>
+<Route
+  path="/franchise/id-cards/create"
+  element={
+    <FranchiseProtectedRoute>
+      <FranchiseIdCardCreate />
+    </FranchiseProtectedRoute>
+  }
+/>
+
+<Route
+  path="/franchise/admit-cards"
+  element={
+    <FranchiseProtectedRoute>
+      <FranchiseAdmitCardList />
+    </FranchiseProtectedRoute>
+  }
+/>
+<Route
+  path="/franchise/admit-cards/create"
+  element={
+    <FranchiseProtectedRoute>
+      <FranchiseAdmitCardCreate />
+    </FranchiseProtectedRoute>
+  }
+/>
+
+<Route
+  path="/franchise/marksheets"
+  element={
+    <FranchiseProtectedRoute>
+      <FranchiseMarksheetList />
+    </FranchiseProtectedRoute>
+  }
+/>
+<Route
+  path="/franchise/marksheets/create"
+  element={
+    <FranchiseProtectedRoute>
+      <FranchiseMarksheetCreate />
     </FranchiseProtectedRoute>
   }
 />

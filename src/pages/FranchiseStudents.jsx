@@ -202,6 +202,93 @@ export function FranchiseSidebar() {
           )}
         </li>
 
+        {/* ID Cards */}
+        <li className="nav-item mb-2">
+          <button
+            type="button"
+            className="btn btn-toggle w-100 text-start d-flex justify-content-between align-items-center text-dark"
+            onClick={() => toggleMenu("idcards")}
+          >
+            <span className="d-flex align-items-center gap-2">
+              <i className="bi bi-person-badge"></i>
+              ID Cards
+            </span>
+            <i className={`bi ${openMenu === "idcards" ? "bi-chevron-down" : "bi-chevron-right"}`}></i>
+          </button>
+          {openMenu === "idcards" && (
+            <ul className="btn-toggle-nav list-unstyled ps-4 pt-2 pb-1">
+              <li className="mb-1">
+                <NavLink to="/franchise/id-cards/create" className={subLinkClass}>
+                  Create ID Card
+                </NavLink>
+              </li>
+              <li className="mb-1">
+                <NavLink to="/franchise/id-cards" end className={subLinkClass}>
+                  View ID Cards
+                </NavLink>
+              </li>
+            </ul>
+          )}
+        </li>
+
+        {/* Admit Cards */}
+        <li className="nav-item mb-2">
+          <button
+            type="button"
+            className="btn btn-toggle w-100 text-start d-flex justify-content-between align-items-center text-dark"
+            onClick={() => toggleMenu("admitcards")}
+          >
+            <span className="d-flex align-items-center gap-2">
+              <i className="bi bi-card-list"></i>
+              Admit Cards
+            </span>
+            <i className={`bi ${openMenu === "admitcards" ? "bi-chevron-down" : "bi-chevron-right"}`}></i>
+          </button>
+          {openMenu === "admitcards" && (
+            <ul className="btn-toggle-nav list-unstyled ps-4 pt-2 pb-1">
+              <li className="mb-1">
+                <NavLink to="/franchise/admit-cards/create" className={subLinkClass}>
+                  Create Admit Card
+                </NavLink>
+              </li>
+              <li className="mb-1">
+                <NavLink to="/franchise/admit-cards" end className={subLinkClass}>
+                  View Admit Cards
+                </NavLink>
+              </li>
+            </ul>
+          )}
+        </li>
+
+        {/* Marksheets */}
+        <li className="nav-item mb-2">
+          <button
+            type="button"
+            className="btn btn-toggle w-100 text-start d-flex justify-content-between align-items-center text-dark"
+            onClick={() => toggleMenu("marksheets")}
+          >
+            <span className="d-flex align-items-center gap-2">
+              <i className="bi bi-file-earmark-text"></i>
+              Marksheets
+            </span>
+            <i className={`bi ${openMenu === "marksheets" ? "bi-chevron-down" : "bi-chevron-right"}`}></i>
+          </button>
+          {openMenu === "marksheets" && (
+            <ul className="btn-toggle-nav list-unstyled ps-4 pt-2 pb-1">
+              <li className="mb-1">
+                <NavLink to="/franchise/marksheets/create" className={subLinkClass}>
+                  Create Marksheet
+                </NavLink>
+              </li>
+              <li className="mb-1">
+                <NavLink to="/franchise/marksheets" end className={subLinkClass}>
+                  View Marksheets
+                </NavLink>
+              </li>
+            </ul>
+          )}
+        </li>
+
         {/* My Credits */}
         <li className="nav-item mb-2">
           <NavLink to="/franchise/credits" className={mainLinkClass}>
