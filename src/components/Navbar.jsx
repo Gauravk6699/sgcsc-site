@@ -200,6 +200,14 @@ const getFallbackAvatar = (seed = "user") =>
                       My Profile
                     </NavLink>
                   </li>
+                  {role === "student" && (
+                    <li>
+                      <NavLink className="dropdown-item" to="/student/results">
+                        <i className="bi bi-bar-chart-line me-2"></i>
+                        My Results & Marksheet
+                      </NavLink>
+                    </li>
+                  )}
                   {role === "franchise" && (
                     <li>
                       <NavLink className="dropdown-item" to="/franchise/credits">

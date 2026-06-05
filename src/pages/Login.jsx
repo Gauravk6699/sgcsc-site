@@ -72,13 +72,15 @@ export default function Login() {
                   </select>
                 </div>
 
-                {/* USERNAME */}
+                {/* USERNAME / ROLL NUMBER */}
                 <div className="mb-3">
-                  <label className="form-label fw-semibold">Username</label>
+                  <label className="form-label fw-semibold">
+                    {type === "student" ? "Roll Number" : "Username"}
+                  </label>
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="Enter username"
+                    placeholder={type === "student" ? "Enter roll number" : "Enter username"}
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     required

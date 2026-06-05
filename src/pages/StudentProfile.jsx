@@ -29,6 +29,12 @@ export default function StudentProfile() {
   const [idCard, setIdCard] = useState(null);
   const [loadingIdCard, setLoadingIdCard] = useState(false);
   const [idCardError, setIdCardError] = useState("");
+  // Marksheet state
+  const [marksheets, setMarksheets] = useState([]);
+  const [downloadingMarksheet, setDownloadingMarksheet] = useState(null);
+  // Typing certificate state
+  const [typingCerts, setTypingCerts] = useState([]);
+  const [loadingTypingCert, setLoadingTypingCert] = useState(false);
   const printRef = useRef();
   
   // Initialize selected course when student data loads
@@ -297,6 +303,179 @@ export default function StudentProfile() {
     }
   };
 
+  const loadJsPDF = () =>
+    new Promise((resolve) => {
+      if (window.jspdf) { resolve(); return; }
+      const s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+      s.onload = resolve;
+      document.body.appendChild(s);
+    });
+
+  // Fetch marksheets for the student
+  const fetchMarksheets = async () => {
+    try {
+      const res = await API.get("/student-profile/marksheet");
+      if (res.data?.success && res.data?.data) {
+        setMarksheets(Array.isArray(res.data.data) ? res.data.data : [res.data.data]);
+      }
+    } catch {
+      // Silent — marksheet may not exist yet
+    }
+  };
+
+  const downloadMarksheetPDF = async (ms, index) => {
+    setDownloadingMarksheet(index);
+    try {
+      await loadJsPDF();
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const W = 210, margin = 15, colW = W - margin * 2;
+
+      doc.setFillColor(0, 86, 163);
+      doc.rect(0, 0, W, 28, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("SHREE GANPATI COMPUTER AND STUDY CENTRE", W / 2, 11, { align: "center" });
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(ms.instituteName || "Raipur Chiraiyakot, Mau", W / 2, 19, { align: "center" });
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text("MARKSHEET", W / 2, 26, { align: "center" });
+
+      let y = 34;
+      doc.setTextColor(0, 0, 0);
+      doc.setDrawColor(0, 86, 163);
+      doc.setLineWidth(0.4);
+      doc.rect(margin, y, colW, 44);
+
+      const lx = margin + 3, vx = margin + 47, rl = W / 2 + 3, rv = W / 2 + 47;
+      const fmt = (d) => d ? new Date(d).toLocaleDateString("en-IN") : "-";
+      const rows = [
+        ["Student Name", ms.studentName || "-", "Enrollment No.", ms.enrollmentNo || "-"],
+        ["Father's Name", ms.fatherName || "-", "Roll Number", ms.rollNumber || "-"],
+        ["Mother's Name", ms.motherName || "-", "Date of Birth", fmt(ms.dob)],
+        ["Course", ms.courseName || "-", "Duration", ms.courseDuration || "-"],
+        ["Period", `${fmt(ms.coursePeriodFrom)} – ${fmt(ms.coursePeriodTo)}`, "Issue Date", fmt(ms.dateOfIssue)],
+      ];
+      rows.forEach(([l1, v1, l2, v2], i) => {
+        const ry = y + 6 + i * 8;
+        doc.setFont("helvetica", "bold"); doc.setFontSize(8.5);
+        doc.text(l1 + ":", lx, ry);
+        doc.setFont("helvetica", "normal");
+        doc.text(String(v1), vx, ry);
+        doc.setFont("helvetica", "bold");
+        doc.text(l2 + ":", rl, ry);
+        doc.setFont("helvetica", "normal");
+        doc.text(String(v2), rv, ry);
+      });
+
+      y += 50;
+
+      // Table header
+      const cols = [
+        { label: "S.No.", w: 12 }, { label: "Subject", w: 60 },
+        { label: "Theory", w: 22 }, { label: "Practical", w: 22 },
+        { label: "Combined", w: 24 }, { label: "Max", w: 22 }, { label: "Grade", w: 18 },
+      ];
+      const totalW = cols.reduce((s, c) => s + c.w, 0);
+      const sc = cols.map((c) => ({ ...c, w: (c.w / totalW) * colW }));
+
+      doc.setFillColor(0, 86, 163); doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(8.5);
+      let x = margin;
+      sc.forEach((col) => { doc.rect(x, y, col.w, 7, "F"); doc.text(col.label, x + col.w / 2, y + 5, { align: "center" }); x += col.w; });
+      y += 7;
+
+      doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+      (ms.subjects || []).forEach((sub, si) => {
+        doc.setFillColor(si % 2 === 0 ? 245 : 255, si % 2 === 0 ? 248 : 255, 255);
+        doc.rect(margin, y, colW, 7, "F");
+        doc.setDrawColor(200, 200, 200); doc.rect(margin, y, colW, 7);
+        const cells = [String(si + 1), sub.subjectName || "-", String(sub.theoryMarks ?? "-"), String(sub.practicalMarks ?? "-"), String(sub.combinedMarks ?? "-"), String(sub.maxCombinedMarks ?? "-"), sub.grade || "-"];
+        x = margin;
+        sc.forEach((col, ci) => { doc.text(cells[ci], ci === 1 ? x + 2 : x + col.w / 2, y + 5, { align: ci === 1 ? "left" : "center" }); x += col.w; });
+        y += 7;
+      });
+
+      // Totals
+      doc.setFillColor(220, 235, 255); doc.rect(margin, y, colW, 7, "F");
+      doc.setDrawColor(0, 86, 163); doc.rect(margin, y, colW, 7);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(8.5);
+      const totRow = ["", "TOTAL", String(ms.totalTheoryMarks ?? "-"), String(ms.totalPracticalMarks ?? "-"), String(ms.totalCombinedMarks ?? "-"), String(ms.maxTotalMarks ?? "-"), ""];
+      x = margin;
+      sc.forEach((col, ci) => { doc.text(totRow[ci], ci === 1 ? x + 2 : x + col.w / 2, y + 5, { align: ci === 1 ? "left" : "center" }); x += col.w; });
+      y += 12;
+
+      doc.setFontSize(10); doc.setFont("helvetica", "bold");
+      doc.setDrawColor(0, 86, 163); doc.setLineWidth(0.3); doc.line(margin, y, W - margin, y); y += 6;
+      doc.text(`Percentage: ${ms.percentage != null ? ms.percentage.toFixed(2) + "%" : "-"}`, margin, y);
+      doc.text(`Overall Grade: ${ms.overallGrade || "-"}`, W / 2, y, { align: "center" });
+
+      doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(100, 100, 100);
+      doc.text("This is a computer-generated marksheet.", W / 2, 275, { align: "center" });
+      doc.text(`Downloaded on: ${new Date().toLocaleDateString("en-IN")}`, W / 2, 280, { align: "center" });
+
+      doc.save(`marksheet_${ms.enrollmentNo || ms.rollNumber || "student"}.pdf`);
+    } catch (err) {
+      console.error("Marksheet PDF error:", err);
+      alert("Failed to generate marksheet PDF. Please try again.");
+    } finally {
+      setDownloadingMarksheet(null);
+    }
+  };
+
+  // Fetch typing certificates for the student
+  const fetchTypingCerts = async () => {
+    try {
+      const res = await API.get("/student-profile/typing-certificate");
+      if (res.data?.success && res.data?.data) {
+        setTypingCerts(Array.isArray(res.data.data) ? res.data.data : [res.data.data]);
+      }
+    } catch {
+      // Silent — typing cert may not exist yet
+    }
+  };
+
+  const downloadTypingCert = async (cert) => {
+    setLoadingTypingCert(true);
+    try {
+      if (cert.certificateImage) {
+        await loadJsPDF();
+        const { jsPDF } = window.jspdf;
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = cert.certificateImage; });
+        const pdf = new jsPDF({ orientation: img.width > img.height ? "landscape" : "portrait", unit: "px", format: [img.width, img.height] });
+        pdf.addImage(cert.certificateImage, "JPEG", 0, 0, img.width, img.height);
+        pdf.save(`typing_certificate_${cert.certificateNo || cert.enrollmentNumber || "student"}.pdf`);
+      } else if (window.CertificateGenerator) {
+        await window.CertificateGenerator.loadTemplate("/typing-certificate-template.jpeg");
+        window.CertificateGenerator.download({
+          studentName: cert.studentName,
+          fatherHusbandName: cert.fatherHusbandName,
+          computerTyping: cert.computerTyping,
+          certificateNo: cert.certificateNo,
+          grade: cert.grade,
+          wordsPerMinute: cert.wordsPerMinute,
+          sessionFrom: cert.sessionFrom,
+          sessionTo: cert.sessionTo,
+          studyCentre: cert.studyCentre,
+          dateOfIssue: cert.dateOfIssue,
+        });
+      } else {
+        alert("Certificate template not available. Please contact admin.");
+      }
+    } catch (err) {
+      console.error("Typing cert download error:", err);
+      alert("Failed to download typing certificate.");
+    } finally {
+      setLoadingTypingCert(false);
+    }
+  };
+
   // Fetch ID card for the student
   const fetchIdCard = async () => {
     try {
@@ -365,6 +544,10 @@ export default function StudentProfile() {
         fetchAdmitCard();
         // Fetch ID card after profile loads
         fetchIdCard();
+        // Fetch marksheets
+        fetchMarksheets();
+        // Fetch typing certificates
+        fetchTypingCerts();
       } catch (err) {
         console.error("Student profile fetch failed:", err);
         setError("Unable to load student profile at the moment.");
@@ -936,6 +1119,140 @@ export default function StudentProfile() {
                               <>
                                 <i className="bi bi-download me-2"></i>
                                 Download Certificate
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ================= TYPING CERTIFICATES ================= */}
+          {typingCerts && typingCerts.length > 0 && (
+            <>
+              <h6 className="fw-bold border-bottom pb-2 mb-3 mt-4">
+                My Typing Certificates
+              </h6>
+              <div className="mb-4">
+                <div className="row">
+                  {typingCerts.map((cert, index) => (
+                    <div key={index} className="col-md-6 mb-3">
+                      <div className="card h-100">
+                        <div className="card-body">
+                          <h6 className="card-title">
+                            <i className="bi bi-keyboard me-2"></i>
+                            Typing Certificate
+                          </h6>
+                          <table className="table table-sm mb-3">
+                            <tbody>
+                              <tr>
+                                <th>Certificate No.</th>
+                                <td>{cert.certificateNo || "-"}</td>
+                              </tr>
+                              <tr>
+                                <th>Typing Type</th>
+                                <td>{cert.computerTyping || "-"}</td>
+                              </tr>
+                              <tr>
+                                <th>Words/Min</th>
+                                <td>{cert.wordsPerMinute || "-"}</td>
+                              </tr>
+                              <tr>
+                                <th>Grade</th>
+                                <td>{cert.grade || "-"}</td>
+                              </tr>
+                              <tr>
+                                <th>Issue Date</th>
+                                <td>{formatDate(cert.dateOfIssue)}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                          <button
+                            className="btn btn-primary btn-sm w-100"
+                            onClick={() => downloadTypingCert(cert)}
+                            disabled={loadingTypingCert}
+                          >
+                            {loadingTypingCert ? (
+                              <>
+                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                Generating...
+                              </>
+                            ) : (
+                              <>
+                                <i className="bi bi-download me-2"></i>
+                                Download Typing Certificate
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ================= MARKSHEETS ================= */}
+          {marksheets && marksheets.length > 0 && (
+            <>
+              <h6 className="fw-bold border-bottom pb-2 mb-3 mt-4">
+                My Marksheets
+              </h6>
+              <div className="mb-4">
+                <div className="row">
+                  {marksheets.map((ms, index) => (
+                    <div key={index} className="col-md-6 mb-3">
+                      <div className="card h-100">
+                        <div className="card-body">
+                          <h6 className="card-title">
+                            <i className="bi bi-file-earmark-text me-2"></i>
+                            {ms.courseName || "Marksheet"}
+                          </h6>
+                          <table className="table table-sm mb-3">
+                            <tbody>
+                              <tr>
+                                <th>Enrollment No.</th>
+                                <td>{ms.enrollmentNo || "-"}</td>
+                              </tr>
+                              <tr>
+                                <th>Roll Number</th>
+                                <td>{ms.rollNumber || "-"}</td>
+                              </tr>
+                              <tr>
+                                <th>Percentage</th>
+                                <td>{ms.percentage != null ? `${ms.percentage.toFixed(2)}%` : "-"}</td>
+                              </tr>
+                              <tr>
+                                <th>Overall Grade</th>
+                                <td>
+                                  <span className="badge bg-success">{ms.overallGrade || "-"}</span>
+                                </td>
+                              </tr>
+                              <tr>
+                                <th>Issue Date</th>
+                                <td>{formatDate(ms.dateOfIssue)}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                          <button
+                            className="btn btn-primary btn-sm w-100"
+                            onClick={() => downloadMarksheetPDF(ms, index)}
+                            disabled={downloadingMarksheet === index}
+                          >
+                            {downloadingMarksheet === index ? (
+                              <>
+                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                Generating...
+                              </>
+                            ) : (
+                              <>
+                                <i className="bi bi-download me-2"></i>
+                                Download Marksheet
                               </>
                             )}
                           </button>
