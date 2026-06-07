@@ -171,7 +171,8 @@ export default function FranchiseSubjectList() {
                   <tr>
                     <th>Course</th>
                     <th>Subject</th>
-                    <th className="text-center">Max Marks</th>
+                    <th className="text-center">Max Theory</th>
+                    <th className="text-center">Max Practical</th>
                     <th className="text-center">Min Marks</th>
                     <th className="text-center">Actions</th>
                   </tr>
@@ -191,6 +192,7 @@ export default function FranchiseSubjectList() {
                         </div>
                       </td>
                       <td className="text-center">{s.maxMarks ?? 0}</td>
+                      <td className="text-center">{s.maxPracticalMarks ?? 0}</td>
                       <td className="text-center">{s.minMarks ?? 0}</td>
                       <td className="text-center">
                         {isOwnSubject(s) ? (

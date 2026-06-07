@@ -18,6 +18,7 @@ export default function FranchiseCreateSubject() {
   const [courseId, setCourseId] = useState("");
   const [name, setName] = useState("");
   const [maxMarks, setMaxMarks] = useState("");
+  const [maxPracticalMarks, setMaxPracticalMarks] = useState("");
   const [minMarks, setMinMarks] = useState("");
 
   const [saving, setSaving] = useState(false);
@@ -90,6 +91,7 @@ export default function FranchiseCreateSubject() {
         setCourseId(String(extractedCourseId));
         setName(s.name || s.subjectName || "");
         setMaxMarks(s.maxMarks ?? s.max ?? "");
+        setMaxPracticalMarks(s.maxPracticalMarks ?? "");
         setMinMarks(s.minMarks ?? s.min ?? "");
       } catch (err) {
         console.error("load subject", err);
@@ -123,6 +125,7 @@ export default function FranchiseCreateSubject() {
       course: courseId,
       name: name.trim(),
       maxMarks: Number(maxMarks) || 0,
+      maxPracticalMarks: Number(maxPracticalMarks) || 0,
       minMarks: Number(minMarks) || 0,
     };
 
@@ -220,8 +223,8 @@ export default function FranchiseCreateSubject() {
         </div>
 
         <div className="row g-3">
-          <div className="col-md-6">
-            <label className="form-label">Maximum Marks</label>
+          <div className="col-md-4">
+            <label className="form-label">Max Theory Marks</label>
             <input
               type="number"
               min="0"
@@ -231,7 +234,18 @@ export default function FranchiseCreateSubject() {
               placeholder="100"
             />
           </div>
-          <div className="col-md-6">
+          <div className="col-md-4">
+            <label className="form-label">Max Practical Marks</label>
+            <input
+              type="number"
+              min="0"
+              className="form-control"
+              value={maxPracticalMarks}
+              onChange={(e) => setMaxPracticalMarks(e.target.value)}
+              placeholder="0"
+            />
+          </div>
+          <div className="col-md-4">
             <label className="form-label">Minimum Marks</label>
             <input
               type="number"
