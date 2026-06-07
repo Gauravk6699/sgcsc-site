@@ -78,7 +78,7 @@ export default function FranchiseMarksheetCreate() {
           theoryMarks: "",
           practicalMarks: "",
           maxTheoryMarks: Number(s.maxMarks) || 100,
-          maxPracticalMarks: 0,
+          maxPracticalMarks: Number(s.maxPracticalMarks) || 0,
           grade: "",
         }))
       );
