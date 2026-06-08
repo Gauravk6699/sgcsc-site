@@ -1,623 +1,318 @@
-// src/pages/StudentResultVerification.jsx
 import { useState, useEffect } from "react";
 import API from "../api/axiosInstance";
-import { jsPDF } from "jspdf";
 
 export default function StudentResultVerification() {
   const [rollNumber, setRollNumber] = useState("");
-  const [result, setResult] = useState(null);
+  const [results, setResults] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [previewUrls, setPreviewUrls] = useState({});
+  const [downloading, setDownloading] = useState({});
 
-  // Check if student is logged in
   const studentToken = localStorage.getItem("student_token");
   const isLoggedIn = !!studentToken;
   const [myResults, setMyResults] = useState([]);
-  const [loadingMyResult, setLoadingMyResult] = useState(false);
+  const [loadingMyResults, setLoadingMyResults] = useState(false);
+  const [myPreviewUrls, setMyPreviewUrls] = useState({});
+  const [myDownloading, setMyDownloading] = useState({});
 
-  // Fetch logged-in student's results
   useEffect(() => {
-    if (isLoggedIn) {
-      fetchMyResults();
-    }
+    if (isLoggedIn) fetchMyResults();
   }, [isLoggedIn]);
 
   const fetchMyResults = async () => {
-    setLoadingMyResult(true);
+    setLoadingMyResults(true);
     try {
       const res = await API.get("/student-profile/result");
       if (res.data.success) {
-        // Handle both single result and array of results
         const data = res.data.data;
         setMyResults(Array.isArray(data) ? data : [data]);
       }
     } catch (err) {
       console.error("Failed to fetch results:", err);
     } finally {
-      setLoadingMyResult(false);
+      setLoadingMyResults(false);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setResult(null);
+    setResults(null);
+    setPreviewUrls({});
     setLoading(true);
-
     try {
-      const res = await API.post("/public/verify/result", { rollNumber });
-      // Handle both single result and array of results
+      const res = await API.post("/public/result", { rollNumber });
       const data = res.data.data;
-      setResult(Array.isArray(data) ? data : [data]);
+      setResults(Array.isArray(data) ? data : [data]);
     } catch {
-      setError("Result not found. Please check your roll number.");
+      setError("No result found. Please check your roll number.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Generate PDF for result
-  const generateResultPDF = (res) => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 20;
-    let y = 20;
+  const buildGenData = (ms) => ({
+    rollNumber:       ms.rollNumber       || "",
+    studentName:      ms.studentName      || "",
+    fatherName:       ms.fatherName       || "",
+    motherName:       ms.motherName       || "",
+    dob:              ms.dob              || "",
+    courseName:       ms.courseName       || "",
+    courseDuration:   ms.courseDuration   || "",
+    coursePeriodFrom: ms.coursePeriodFrom || "",
+    coursePeriodTo:   ms.coursePeriodTo   || "",
+    instituteName:    ms.instituteName    || "",
+    dateOfIssue:      ms.dateOfIssue      || "",
+    totalCombinedMarks: ms.totalCombinedMarks || 0,
+    maxTotalMarks:    ms.maxTotalMarks    || 0,
+    percentage:       ms.percentage       || 0,
+    overallGrade:     ms.overallGrade     || "",
+    subjects:         ms.subjects         || [],
+  });
 
-    // Header
-    doc.setFillColor(0, 102, 204);
-    doc.rect(0, 0, pageWidth, 35, "F");
-    doc.setFontSize(18);
-    doc.setTextColor(255, 255, 255);
-    doc.text("RESULT CERTIFICATE", pageWidth / 2, y, { align: "center" });
-    y = 45;
-
-    // Student Info
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    doc.setFont("helvetica", "bold");
-    doc.text("Student Information", margin, y);
-    y += 8;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.text(`Enrollment Number: ${res.enrollmentNumber || res.rollNumber || "-"}`, margin, y);
-    y += 6;
-    doc.text(`Roll Number: ${res.rollNumber || "-"}`, margin, y);
-    y += 6;
-    doc.text(`Course: ${res.courseName || "-"}`, margin, y);
-    y += 6;
-    doc.text(`Exam Session: ${res.examSession || "-"}`, margin, y);
-    y += 6;
-    doc.text(`Exam Date: ${res.examDate ? new Date(res.examDate).toLocaleDateString() : "-"}`, margin, y);
-    y += 12;
-
-    // Subject Marks Table
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text("Subject Marks", margin, y);
-    y += 8;
-
-    // Table header
-    doc.setFillColor(240, 240, 240);
-    doc.rect(margin, y, pageWidth - 2 * margin, 8, "F");
-    doc.setFontSize(9);
-    doc.setTextColor(0, 0, 0);
-    doc.text("Subject", margin + 2, y + 5);
-    doc.text("Max", margin + 70, y + 5);
-    doc.text("Min", margin + 85, y + 5);
-    doc.text("Obtained", margin + 100, y + 5);
-    doc.text("Grade", margin + 125, y + 5);
-    doc.text("Status", margin + 145, y + 5);
-    y += 8;
-
-    // Table rows
-    doc.setFont("helvetica", "normal");
-    if (res.subjects && res.subjects.length > 0) {
-      res.subjects.forEach((sub) => {
-        doc.text(sub.subjectName || "Subject", margin + 2, y + 5);
-        doc.text(String(sub.maxMarks || 0), margin + 70, y + 5);
-        doc.text(String(sub.minMarks || 0), margin + 85, y + 5);
-        doc.text(String(sub.marksObtained || 0), margin + 100, y + 5);
-        doc.text(sub.grade || "-", margin + 125, y + 5);
-        doc.text(sub.status || "-", margin + 145, y + 5);
-        y += 7;
-      });
+  const generatePreview = async (ms, idx, setUrls) => {
+    if (!window.MarksheetGenerator) return;
+    try {
+      await window.MarksheetGenerator.loadTemplate("/marksheet-template.jpeg");
+      const dataUrl = await window.MarksheetGenerator.getDataURL(buildGenData(ms));
+      setUrls((prev) => ({ ...prev, [idx]: dataUrl }));
+    } catch (err) {
+      console.error("Marksheet preview error:", err);
     }
-
-    y += 8;
-
-    // Overall Result
-    doc.setFillColor(0, 102, 204);
-    doc.rect(margin, y, pageWidth - 2 * margin, 45, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.text("OVERALL RESULT", pageWidth / 2, y + 8, { align: "center" });
-
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Total Marks: ${res.totalMarks || 0}`, margin + 10, y + 20);
-    doc.text(`Obtained Marks: ${res.totalObtained || 0}`, margin + 80, y + 20);
-    doc.text(`Percentage: ${res.percentage?.toFixed(2) || 0}%`, margin + 10, y + 30);
-    doc.text(`Grade: ${res.overallGrade || "-"}`, margin + 80, y + 30);
-    doc.text(`Status: ${res.resultStatus?.toUpperCase() || "-"}`, margin + 10, y + 40);
-
-    // Footer
-    const footerY = doc.internal.pageSize.getHeight() - 20;
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text("This is a computer-generated document. Verification can be done on the website.", pageWidth / 2, footerY, { align: "center" });
-
-    return doc;
   };
 
-  // Download result as PDF
-  const downloadResult = (res) => {
-    const doc = generateResultPDF(res);
-    doc.save(`result_${res.enrollmentNumber || res.rollNumber || "student"}_${res.examSession || "result"}.pdf`);
+  const downloadPDF = async (ms, idx, setDl) => {
+    if (!window.MarksheetGenerator) {
+      alert("Marksheet generator not loaded. Please refresh the page.");
+      return;
+    }
+    setDl((prev) => ({ ...prev, [idx]: true }));
+    try {
+      await window.MarksheetGenerator.loadTemplate("/marksheet-template.jpeg");
+      await window.MarksheetGenerator.download(buildGenData(ms));
+    } catch (err) {
+      console.error("Marksheet download error:", err);
+      alert("Failed to generate marksheet PDF.");
+    } finally {
+      setDl((prev) => ({ ...prev, [idx]: false }));
+    }
   };
 
-  // Download all results as PDF (for public verification)
-  const downloadAllPublicResults = (results) => {
-    if (!results || results.length === 0) return;
-
-    const doc = new jsPDF();
-
-    results.forEach((res, index) => {
-      if (index > 0) {
-        doc.addPage();
-      }
-
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 20;
-      let y = 20;
-
-      // Header
-      doc.setFillColor(0, 102, 204);
-      doc.rect(0, 0, pageWidth, 35, "F");
-      doc.setFontSize(18);
-      doc.setTextColor(255, 255, 255);
-      doc.text("RESULT CERTIFICATE", pageWidth / 2, y, { align: "center" });
-      y = 45;
-
-      // Page number
-      doc.setFontSize(10);
-      doc.setTextColor(150, 150, 150);
-      doc.text(`Result ${index + 1} of ${results.length}`, pageWidth - margin, 30, { align: "right" });
-
-      // Student Info
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-      doc.setFont("helvetica", "bold");
-      doc.text("Student Information", margin, y);
-      y += 8;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.text(`Enrollment Number: ${res.enrollmentNumber || res.rollNumber || "-"}`, margin, y);
-      y += 6;
-      doc.text(`Roll Number: ${res.rollNumber || "-"}`, margin, y);
-      y += 6;
-      doc.text(`Course: ${res.courseName || "-"}`, margin, y);
-      y += 6;
-      doc.text(`Exam Session: ${res.examSession || "-"}`, margin, y);
-      y += 6;
-      doc.text(`Exam Date: ${res.examDate ? new Date(res.examDate).toLocaleDateString() : "-"}`, margin, y);
-      y += 12;
-
-      // Subject Marks Table
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.text("Subject Marks", margin, y);
-      y += 8;
-
-      // Table header
-      doc.setFillColor(240, 240, 240);
-      doc.rect(margin, y, pageWidth - 2 * margin, 8, "F");
-      doc.setFontSize(9);
-      doc.setTextColor(0, 0, 0);
-      doc.text("Subject", margin + 2, y + 5);
-      doc.text("Max", margin + 70, y + 5);
-      doc.text("Min", margin + 85, y + 5);
-      doc.text("Obtained", margin + 100, y + 5);
-      doc.text("Grade", margin + 125, y + 5);
-      doc.text("Status", margin + 145, y + 5);
-      y += 8;
-
-      // Table rows
-      doc.setFont("helvetica", "normal");
-      if (res.subjects && res.subjects.length > 0) {
-        res.subjects.forEach((sub) => {
-          doc.text(sub.subjectName || "Subject", margin + 2, y + 5);
-          doc.text(String(sub.maxMarks || 0), margin + 70, y + 5);
-          doc.text(String(sub.minMarks || 0), margin + 85, y + 5);
-          doc.text(String(sub.marksObtained || 0), margin + 100, y + 5);
-          doc.text(sub.grade || "-", margin + 125, y + 5);
-          doc.text(sub.status || "-", margin + 145, y + 5);
-          y += 7;
-        });
-      }
-
-      y += 8;
-
-      // Overall Result
-      doc.setFillColor(0, 102, 204);
-      doc.rect(margin, y, pageWidth - 2 * margin, 45, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.text("OVERALL RESULT", pageWidth / 2, y + 8, { align: "center" });
-
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Total Marks: ${res.totalMarks || 0}`, margin + 10, y + 20);
-      doc.text(`Obtained Marks: ${res.totalObtained || 0}`, margin + 80, y + 20);
-      doc.text(`Percentage: ${res.percentage?.toFixed(2) || 0}%`, margin + 10, y + 30);
-      doc.text(`Grade: ${res.overallGrade || "-"}`, margin + 80, y + 30);
-      doc.text(`Status: ${res.resultStatus?.toUpperCase() || "-"}`, margin + 10, y + 40);
-    });
-
-    // Footer
-    const footerY = doc.internal.pageSize.getHeight() - 20;
-    const finalPageWidth = doc.internal.pageSize.getWidth();
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text("This is a computer-generated document. All results are included above.", finalPageWidth / 2, footerY, { align: "center" });
-
-    doc.save(`all_results_${results[0]?.enrollmentNumber || results[0]?.rollNumber || "student"}.pdf`);
-  };
-
-  // Download all results (for logged in users)
-  const downloadAllResults = () => {
-    if (!myResults || myResults.length === 0) return;
-
-    const doc = new jsPDF();
-
-    myResults.forEach((result, index) => {
-      if (index > 0) {
-        doc.addPage();
-      }
-
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 20;
-      let y = 20;
-
-      // Header
-      doc.setFillColor(0, 102, 204);
-      doc.rect(0, 0, pageWidth, 35, "F");
-      doc.setFontSize(18);
-      doc.setTextColor(255, 255, 255);
-      doc.text("RESULT CERTIFICATE", pageWidth / 2, y, { align: "center" });
-      y = 45;
-
-      // Page number
-      doc.setFontSize(10);
-      doc.setTextColor(150, 150, 150);
-      doc.text(`Page ${index + 1} of ${myResults.length}`, pageWidth - margin, 30, { align: "right" });
-
-      // Student Info
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-      doc.setFont("helvetica", "bold");
-      doc.text("Student Information", margin, y);
-      y += 8;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.text(`Enrollment Number: ${result.enrollmentNumber || result.rollNumber || "-"}`, margin, y);
-      y += 6;
-      doc.text(`Roll Number: ${result.rollNumber || "-"}`, margin, y);
-      y += 6;
-      doc.text(`Course: ${result.courseName || "-"}`, margin, y);
-      y += 6;
-      doc.text(`Exam Session: ${result.examSession || "-"}`, margin, y);
-      y += 6;
-      doc.text(`Exam Date: ${result.examDate ? new Date(result.examDate).toLocaleDateString() : "-"}`, margin, y);
-      y += 12;
-
-      // Subject Marks Table
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.text("Subject Marks", margin, y);
-      y += 8;
-
-      // Table header
-      doc.setFillColor(240, 240, 240);
-      doc.rect(margin, y, pageWidth - 2 * margin, 8, "F");
-      doc.setFontSize(9);
-      doc.setTextColor(0, 0, 0);
-      doc.text("Subject", margin + 2, y + 5);
-      doc.text("Max", margin + 70, y + 5);
-      doc.text("Min", margin + 85, y + 5);
-      doc.text("Obtained", margin + 100, y + 5);
-      doc.text("Grade", margin + 125, y + 5);
-      doc.text("Status", margin + 145, y + 5);
-      y += 8;
-
-      // Table rows
-      doc.setFont("helvetica", "normal");
-      if (result.subjects && result.subjects.length > 0) {
-        result.subjects.forEach((sub) => {
-          doc.text(sub.subjectName || "Subject", margin + 2, y + 5);
-          doc.text(String(sub.maxMarks || 0), margin + 70, y + 5);
-          doc.text(String(sub.minMarks || 0), margin + 85, y + 5);
-          doc.text(String(sub.marksObtained || 0), margin + 100, y + 5);
-          doc.text(sub.grade || "-", margin + 125, y + 5);
-          doc.text(sub.status || "-", margin + 145, y + 5);
-          y += 7;
-        });
-      }
-
-      y += 8;
-
-      // Overall Result
-      doc.setFillColor(0, 102, 204);
-      doc.rect(margin, y, pageWidth - 2 * margin, 45, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.text("OVERALL RESULT", pageWidth / 2, y + 8, { align: "center" });
-
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Total Marks: ${result.totalMarks || 0}`, margin + 10, y + 20);
-      doc.text(`Obtained Marks: ${result.totalObtained || 0}`, margin + 80, y + 20);
-      doc.text(`Percentage: ${result.percentage?.toFixed(2) || 0}%`, margin + 10, y + 30);
-      doc.text(`Grade: ${result.overallGrade || "-"}`, margin + 80, y + 30);
-      doc.text(`Status: ${result.resultStatus?.toUpperCase() || "-"}`, margin + 10, y + 40);
-    });
-
-    // Footer on last page
-    const footerY = doc.internal.pageSize.getHeight() - 20;
-    const finalPageWidth = doc.internal.pageSize.getWidth();
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text("This is a computer-generated document. All results are included above.", finalPageWidth / 2, footerY, { align: "center" });
-
-    doc.save(`all_results_${myResults[0]?.enrollmentNumber || myResults[0]?.rollNumber || "student"}.pdf`);
-  };
-
-  // If logged in, show student's own results
   if (isLoggedIn) {
     return (
       <div className="container py-5">
         <h2 className="text-center mb-4">My Results</h2>
-
-        {loadingMyResult ? (
-          <div className="text-center">
-            <p>Loading your results...</p>
-          </div>
+        {loadingMyResults ? (
+          <p className="text-center">Loading...</p>
         ) : myResults.length > 0 ? (
-          <div>
-            {myResults.map((res, index) => (
-              <div key={index} className="card shadow-sm mb-4">
-                <div className="card-body">
-                  <div className="d-flex justify-content-between align-items-center mb-3">
-                    <h5 className="mb-0">Result #{index + 1}: {res.courseName || "Course"}</h5>
-                    <button
-                      className="btn btn-sm btn-outline-primary"
-                      onClick={() => downloadResult(res)}
-                    >
-                      <i className="bi bi-download me-1"></i> Download
-                    </button>
-                  </div>
-
-                  <div className="row mb-3">
-                    <div className="col-md-6">
-                      <p><strong>Enrollment Number:</strong> {res.enrollmentNumber || res.rollNumber}</p>
-                    </div>
-                    <div className="col-md-6">
-                      <p><strong>Roll Number:</strong> {res.rollNumber || "-"}</p>
-                    </div>
-                  </div>
-                  <div className="row mb-3">
-                    <div className="col-md-6">
-                      <p><strong>Exam Session:</strong> {res.examSession || "-"}</p>
-                    </div>
-                  </div>
-
-                  <h6 className="border-bottom pb-2 mb-3">Subject Marks</h6>
-                  <div className="table-responsive">
-                    <table className="table table-bordered table-sm">
-                      <thead className="table-light">
-                        <tr>
-                          <th>Subject</th>
-                          <th>Max Marks</th>
-                          <th>Min Marks</th>
-                          <th>Marks Obtained</th>
-                          <th>Practical</th>
-                          <th>Grade</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {res.subjects?.map((sub, idx) => (
-                          <tr key={idx}>
-                            <td>{sub.subjectName || "Subject " + (idx + 1)}</td>
-                            <td>{sub.maxMarks || 0}</td>
-                            <td>{sub.minMarks || 0}</td>
-                            <td>{sub.marksObtained || 0}</td>
-                            <td>{sub.practicalMarks || 0}/{sub.maxPracticalMarks || 0}</td>
-                            <td>{sub.grade || "-"}</td>
-                            <td>
-                              <span className={`badge ${sub.status === "pass" ? "bg-success" : sub.status === "fail" ? "bg-danger" : "bg-warning"}`}>
-                                {sub.status || "-"}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <h6 className="border-bottom pb-2 mb-3">Overall Result</h6>
-                  <div className="row mb-3">
-                    <div className="col-md-4">
-                      <p><strong>Total Marks:</strong> {res.totalMarks || 0}</p>
-                    </div>
-                    <div className="col-md-4">
-                      <p><strong>Obtained Marks:</strong> {res.totalObtained || 0}</p>
-                    </div>
-                    <div className="col-md-4">
-                      <p><strong>Percentage:</strong> {res.percentage?.toFixed(2) || 0}%</p>
-                    </div>
-                  </div>
-                  <div className="row">
-                    <div className="col-md-4">
-                      <p><strong>Overall Grade:</strong> {res.overallGrade || "-"}</p>
-                    </div>
-                    <div className="col-md-4">
-                      <p>
-                        <strong>Result Status:</strong>{" "}
-                        <span className={`badge ${res.resultStatus === "pass" ? "bg-success" : res.resultStatus === "fail" ? "bg-danger" : "bg-warning"}`}>
-                          {res.resultStatus || "-"}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {myResults.length > 1 && (
-              <div className="text-center mt-4">
-                <button className="btn btn-primary" onClick={() => downloadAllResults()}>
-                  <i className="bi bi-download me-2"></i>
-                  Download All Results
-                </button>
-              </div>
-            )}
-          </div>
+          myResults.map((ms, idx) => (
+            <MarksheetCard
+              key={idx}
+              ms={ms}
+              idx={idx}
+              previewUrl={myPreviewUrls[idx]}
+              downloading={myDownloading[idx]}
+              onPreview={() => generatePreview(ms, idx, setMyPreviewUrls)}
+              onDownload={() => downloadPDF(ms, idx, setMyDownloading)}
+            />
+          ))
         ) : (
-          <div className="alert alert-warning">
-            No results found. Please contact your center.
-          </div>
+          <div className="alert alert-warning">No results found. Please contact your center.</div>
         )}
       </div>
     );
   }
 
-  // Public verification form for non-logged-in users
   return (
-    <div className="container my-5">
+    <div className="container py-5">
       <h2 className="text-center mb-4">Result Verification</h2>
-      <p className="text-center text-muted mb-4">
-        Enter your roll number to verify and download your result
-      </p>
+      <p className="text-center text-muted mb-4">Enter your roll number to verify and download your marksheet.</p>
 
       <form onSubmit={handleSubmit} className="card p-4 mx-auto" style={{ maxWidth: 500 }}>
         <div className="mb-3">
-          <label className="form-label">Roll Number</label>
+          <label className="form-label">Roll Number / Enrollment Number</label>
           <input
             className="form-control"
-            placeholder="Enter your roll number"
+            placeholder="e.g. 124368 or SG124368"
             value={rollNumber}
             onChange={(e) => setRollNumber(e.target.value)}
             required
           />
         </div>
         <button className="btn btn-primary w-100" disabled={loading}>
-          {loading ? "Verifying..." : "Verify & Download"}
+          {loading ? "Verifying..." : "Verify"}
         </button>
       </form>
 
-      {error && <div className="alert alert-danger mt-3">{error}</div>}
+      {error && <div className="alert alert-danger mt-3 mx-auto" style={{ maxWidth: 500 }}>{error}</div>}
 
-      {result && (
-        <div>
-          {result.map((res, index) => (
-            <div key={index} className="card mt-4">
-              <div className="card-header d-flex justify-content-between align-items-center">
-                <h5 className="mb-0">Result #{index + 1}: {res.courseName || "Course"}</h5>
-                <button
-                  className="btn btn-primary"
-                  onClick={() => downloadResult(res)}
-                >
-                  <i className="bi bi-download me-1"></i> Download PDF
-                </button>
-              </div>
-              <div className="card-body">
-                <div className="row mb-3">
-                  <div className="col-md-6">
-                    <p><strong>Enrollment Number:</strong> {res.enrollmentNumber || res.rollNumber}</p>
-                  </div>
-                  <div className="col-md-6">
-                    <p><strong>Roll Number:</strong> {res.rollNumber || "-"}</p>
-                  </div>
-                </div>
-                <div className="row mb-3">
-                  <div className="col-md-6">
-                    <p><strong>Course:</strong> {res.courseName || "-"}</p>
-                  </div>
-                  <div className="col-md-6">
-                    <p><strong>Exam Session:</strong> {res.examSession || "-"}</p>
-                  </div>
-                </div>
-
-                <h6 className="border-bottom pb-2 mb-3">Subject Marks</h6>
-                <div className="table-responsive">
-                  <table className="table table-bordered table-sm">
-                    <thead className="table-light">
-                      <tr>
-                        <th>Subject</th>
-                        <th>Max</th>
-                        <th>Min</th>
-                        <th>Obtained</th>
-                        <th>Grade</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {res.subjects?.map((sub, idx) => (
-                        <tr key={idx}>
-                          <td>{sub.subjectName || "Subject " + (idx + 1)}</td>
-                          <td>{sub.maxMarks || 0}</td>
-                          <td>{sub.minMarks || 0}</td>
-                          <td>{sub.marksObtained || 0}</td>
-                          <td>{sub.grade || "-"}</td>
-                          <td>
-                            <span className={`badge ${sub.status === "pass" ? "bg-success" : sub.status === "fail" ? "bg-danger" : "bg-warning"}`}>
-                              {sub.status || "-"}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <h6 className="border-bottom pb-2 mb-3 mt-4">Overall Result</h6>
-                <div className="row">
-                  <div className="col-md-3">
-                    <p><strong>Total:</strong> {res.totalMarks || 0}</p>
-                  </div>
-                  <div className="col-md-3">
-                    <p><strong>Obtained:</strong> {res.totalObtained || 0}</p>
-                  </div>
-                  <div className="col-md-3">
-                    <p><strong>Percentage:</strong> {res.percentage?.toFixed(2) || 0}%</p>
-                  </div>
-                  <div className="col-md-3">
-                    <p>
-                      <strong>Status:</strong>{" "}
-                      <span className={`badge ${res.resultStatus === "pass" ? "bg-success" : res.resultStatus === "fail" ? "bg-danger" : "bg-warning"}`}>
-                        {res.resultStatus || "-"}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+      {results && results.length > 0 && (
+        <div className="mt-4">
+          <div className="text-center mb-3">
+            <i className="bi bi-check-circle-fill text-success" style={{ fontSize: "2rem" }}></i>
+            <p className="mt-1 text-success fw-semibold">
+              {results.length} result{results.length > 1 ? "s" : ""} found
+            </p>
+          </div>
+          {results.map((ms, idx) => (
+            <MarksheetCard
+              key={idx}
+              ms={ms}
+              idx={idx}
+              previewUrl={previewUrls[idx]}
+              downloading={downloading[idx]}
+              onPreview={() => generatePreview(ms, idx, setPreviewUrls)}
+              onDownload={() => downloadPDF(ms, idx, setDownloading)}
+            />
           ))}
-          
-          {/* Download All Button */}
-          {result.length > 1 && (
-            <div className="text-center mt-4">
-              <button className="btn btn-success" onClick={() => downloadAllPublicResults(result)}>
-                <i className="bi bi-download me-2"></i>
-                Download All Results
-              </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MarksheetCard({ ms, idx, previewUrl, downloading, onPreview, onDownload }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const handleExpand = () => {
+    if (!expanded) onPreview();
+    setExpanded((v) => !v);
+  };
+
+  const fmt = (d) => d ? new Date(d).toLocaleDateString("en-IN") : "-";
+
+  return (
+    <div className="card shadow-sm mb-4 mx-auto" style={{ maxWidth: 900 }}>
+      <div className="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <i className="bi bi-file-earmark-text-fill text-primary me-2"></i>
+          <strong>{ms.courseName || `Result ${idx + 1}`}</strong>
+          <span className="ms-2 text-muted small">Roll: {ms.rollNumber}</span>
+        </div>
+        <div className="d-flex gap-2">
+          <button className="btn btn-sm btn-outline-secondary" onClick={handleExpand}>
+            <i className={`bi bi-${expanded ? "eye-slash" : "eye"} me-1`}></i>
+            {expanded ? "Hide" : "View Marksheet"}
+          </button>
+          <button className="btn btn-sm btn-primary" onClick={onDownload} disabled={downloading}>
+            {downloading ? (
+              <><span className="spinner-border spinner-border-sm me-1"></span>Generating...</>
+            ) : (
+              <><i className="bi bi-download me-1"></i>Download PDF</>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Rendered marksheet image */}
+      {expanded && (
+        <div className="card-body p-2 text-center bg-light">
+          {previewUrl ? (
+            <img
+              src={previewUrl}
+              alt={`Marksheet ${ms.rollNumber}`}
+              style={{ maxWidth: "100%", borderRadius: 4, boxShadow: "0 2px 12px rgba(0,0,0,0.15)" }}
+            />
+          ) : (
+            <div className="py-5 text-muted">
+              <div className="spinner-border spinner-border-sm me-2"></div>
+              Generating marksheet preview...
             </div>
           )}
         </div>
       )}
+
+      {/* Summary details */}
+      <div className="card-body">
+        <div className="row g-3">
+          <div className="col-md-6">
+            <h6 className="border-bottom pb-2 mb-2 text-primary">Student Details</h6>
+            <p className="mb-1"><strong>Name:</strong> {ms.studentName || "-"}</p>
+            <p className="mb-1"><strong>Father's Name:</strong> {ms.fatherName || "-"}</p>
+            <p className="mb-1"><strong>Mother's Name:</strong> {ms.motherName || "-"}</p>
+            <p className="mb-1"><strong>Date of Birth:</strong> {fmt(ms.dob)}</p>
+            <p className="mb-1"><strong>Roll Number:</strong> {ms.rollNumber || "-"}</p>
+            <p className="mb-1"><strong>Enrollment No:</strong> {ms.enrollmentNo || "-"}</p>
+          </div>
+          <div className="col-md-6">
+            <h6 className="border-bottom pb-2 mb-2 text-primary">Course Details</h6>
+            <p className="mb-1"><strong>Course:</strong> {ms.courseName || "-"}</p>
+            <p className="mb-1"><strong>Duration:</strong> {ms.courseDuration || "-"}</p>
+            <p className="mb-1">
+              <strong>Period:</strong>{" "}
+              {ms.coursePeriodFrom ? fmt(ms.coursePeriodFrom) : "-"} – {ms.coursePeriodTo ? fmt(ms.coursePeriodTo) : "-"}
+            </p>
+            <p className="mb-1"><strong>Institute:</strong> {ms.instituteName || "-"}</p>
+            <p className="mb-1"><strong>Issue Date:</strong> {fmt(ms.dateOfIssue)}</p>
+          </div>
+
+          <div className="col-12">
+            <h6 className="border-bottom pb-2 mb-2 text-primary">Subject Marks</h6>
+            <div className="table-responsive">
+              <table className="table table-bordered table-sm mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th>Subject</th>
+                    <th className="text-center">Theory</th>
+                    <th className="text-center">Practical</th>
+                    <th className="text-center">Total</th>
+                    <th className="text-center">Grade</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ms.subjects?.map((sub, i) => {
+                    const combined = (sub.theoryMarks || 0) + (sub.practicalMarks || 0);
+                    return (
+                      <tr key={i}>
+                        <td>{sub.subjectName || `Subject ${i + 1}`}</td>
+                        <td className="text-center">{sub.theoryMarks ?? "-"}</td>
+                        <td className="text-center">{sub.practicalMarks ?? "-"}</td>
+                        <td className="text-center">{combined}</td>
+                        <td className="text-center"><span className="badge bg-secondary">{sub.grade || "-"}</span></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot className="table-light fw-semibold">
+                  <tr>
+                    <td>Total</td>
+                    <td className="text-center">{ms.totalTheoryMarks ?? "-"}</td>
+                    <td className="text-center">{ms.totalPracticalMarks ?? "-"}</td>
+                    <td className="text-center">{ms.totalCombinedMarks ?? "-"} / {ms.maxTotalMarks ?? "-"}</td>
+                    <td className="text-center">
+                      <span className="badge bg-primary">{ms.overallGrade || "-"}</span>
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <div className="col-12">
+            <div className="row g-2 mt-1">
+              <div className="col-sm-4 text-center">
+                <div className="border rounded p-2">
+                  <div className="text-muted small">Percentage</div>
+                  <div className="fw-bold fs-5">{ms.percentage?.toFixed(1) ?? 0}%</div>
+                </div>
+              </div>
+              <div className="col-sm-4 text-center">
+                <div className="border rounded p-2">
+                  <div className="text-muted small">Overall Grade</div>
+                  <div className="fw-bold fs-5">{ms.overallGrade || "-"}</div>
+                </div>
+              </div>
+              <div className="col-sm-4 text-center">
+                <div className="border rounded p-2">
+                  <div className="text-muted small">Total Marks</div>
+                  <div className="fw-bold fs-5">{ms.totalCombinedMarks ?? 0} / {ms.maxTotalMarks ?? 0}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
