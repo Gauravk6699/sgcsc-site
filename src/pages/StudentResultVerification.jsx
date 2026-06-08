@@ -135,7 +135,7 @@ export default function StudentResultVerification() {
           <label className="form-label">Roll Number</label>
           <input
             className="form-control"
-            placeholder="e.g. 124368"
+            placeholder="Enter your roll number"
             value={rollNumber}
             onChange={(e) => setRollNumber(e.target.value)}
             required
