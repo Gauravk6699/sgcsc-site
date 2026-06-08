@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import API from "../api/axiosInstance";
 
 export default function StudentResultVerification() {
-  const [enrollmentNo, setEnrollmentNo] = useState("");
+  const [rollNumber, setRollNumber] = useState("");
   const [dob, setDob] = useState("");
   const [results, setResults] = useState(null);
   const [error, setError] = useState("");
@@ -43,11 +43,11 @@ export default function StudentResultVerification() {
     setPreviewUrls({});
     setLoading(true);
     try {
-      const res = await API.post("/public/result", { enrollmentNo, dob });
+      const res = await API.post("/public/result", { rollNumber, dob });
       const data = res.data.data;
       setResults(Array.isArray(data) ? data : [data]);
     } catch {
-      setError("No result found. Please check your enrollment number and date of birth.");
+      setError("No result found. Please check your roll number and date of birth.");
     } finally {
       setLoading(false);
     }
@@ -132,12 +132,12 @@ export default function StudentResultVerification() {
 
       <form onSubmit={handleSubmit} className="card p-4 mx-auto" style={{ maxWidth: 500 }}>
         <div className="mb-3">
-          <label className="form-label">Enrollment Number</label>
+          <label className="form-label">Roll Number</label>
           <input
             className="form-control"
             placeholder="e.g. SG124368"
-            value={enrollmentNo}
-            onChange={(e) => setEnrollmentNo(e.target.value)}
+            value={rollNumber}
+            onChange={(e) => setRollNumber(e.target.value)}
             required
           />
         </div>
