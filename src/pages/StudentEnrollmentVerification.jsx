@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import API from "../api/axiosInstance";
-import { jsPDF } from "jspdf";
 
 export default function StudentEnrollmentVerification() {
   const [activeTab, setActiveTab] = useState("enrollment");
-  
+
   // Enrollment state
   const [enrollmentNo, setEnrollmentNo] = useState("");
   const [dob, setDob] = useState("");
@@ -15,20 +14,24 @@ export default function StudentEnrollmentVerification() {
   // Certificate state
   const [certEnrollmentNo, setCertEnrollmentNo] = useState("");
   const [certDob, setCertDob] = useState("");
-  const [certResult, setCertResult] = useState(null);
+  const [certResults, setCertResults] = useState(null);
   const [certError, setCertError] = useState("");
   const [certLoading, setCertLoading] = useState(false);
+  const [certPreviewUrls, setCertPreviewUrls] = useState({});
+  const [certDownloading, setCertDownloading] = useState({});
 
   // Check if student is logged in
   const studentToken = localStorage.getItem("student_token");
   const isLoggedIn = !!studentToken;
   const [myEnrollment, setMyEnrollment] = useState(null);
   const [loadingMyEnrollment, setLoadingMyEnrollment] = useState(false);
+  const [myCertificates, setMyCertificates] = useState([]);
+  const [loadingMyCertificates, setLoadingMyCertificates] = useState(false);
 
-  // Fetch logged-in student's enrollment info
   useEffect(() => {
     if (isLoggedIn) {
       fetchMyEnrollment();
+      fetchMyCertificates();
     }
   }, [isLoggedIn]);
 
@@ -36,9 +39,7 @@ export default function StudentEnrollmentVerification() {
     setLoadingMyEnrollment(true);
     try {
       const res = await API.get("/student-profile/enrollment");
-      if (res.data.success) {
-        setMyEnrollment(res.data.data);
-      }
+      if (res.data.success) setMyEnrollment(res.data.data);
     } catch (err) {
       console.error("Failed to fetch enrollment:", err);
     } finally {
@@ -46,18 +47,28 @@ export default function StudentEnrollmentVerification() {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const fetchMyCertificates = async () => {
+    setLoadingMyCertificates(true);
+    try {
+      const res = await API.get("/student-profile/certificate");
+      if (res.data.success) {
+        const data = res.data.data;
+        setMyCertificates(Array.isArray(data) ? data : [data]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch certificates:", err);
+    } finally {
+      setLoadingMyCertificates(false);
+    }
+  };
+
+  const handleEnrollmentSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setResult(null);
     setLoading(true);
-
     try {
-      const res = await API.post("/public/enrollment", {
-        enrollmentNo,
-        dob,
-      });
-
+      const res = await API.post("/public/enrollment", { enrollmentNo, dob });
       setResult(res.data.data);
     } catch {
       setError("No record found.");
@@ -66,21 +77,19 @@ export default function StudentEnrollmentVerification() {
     }
   };
 
-  // Handle certificate verification
   const handleCertSubmit = async (e) => {
     e.preventDefault();
     setCertError("");
-    setCertResult(null);
+    setCertResults(null);
+    setCertPreviewUrls({});
     setCertLoading(true);
-
     try {
       const res = await API.post("/public/certificate", {
         enrollmentNumber: certEnrollmentNo,
         dob: certDob,
       });
-
       if (res.data.success && res.data.data) {
-        setCertResult(res.data.data);
+        setCertResults(res.data.data);
       } else {
         setCertError("No certificate found.");
       }
@@ -91,326 +100,149 @@ export default function StudentEnrollmentVerification() {
     }
   };
 
-  // Download certificate as PDF
-  const downloadCertificatePDF = (cert) => {
+  const buildCertGenData = (cert) => ({
+    studentNameCombined: cert.name || "",
+    courseName: cert.courseName || "",
+    grade: cert.grade || "",
+    courseDuration: cert.courseDuration || "",
+    coursePeriodFrom: cert.coursePeriodFrom || "",
+    coursePeriodTo: cert.coursePeriodTo || "",
+    certificateNumber: cert.certificateNumber || "",
+    dateOfIssue: cert.issueDate || "",
+    photo: cert.photo || "",
+    centerName: cert.centerName || cert.atcName || "",
+  });
+
+  const downloadCertPDF = async (cert, idx) => {
     if (!window.CertificateGenerator) {
-      setCertError("Certificate generator not loaded. Please refresh the page.");
+      alert("Certificate generator not loaded. Please refresh the page.");
       return;
     }
-
-    const certGen = window.CertificateGenerator;
-    certGen.loadTemplate('/template.jpeg')
-      .then(() => {
-        const studentData = {
-          name: cert.name,
-          atcCode: cert.certificateNumber,
-          dateOfIssue: cert.issueDate,
-          dateOfRenewal: cert.renewalDate
-        };
-        certGen.download(studentData);
-      })
-      .catch(err => {
-        console.error("Template load error:", err);
-        setCertError("Certificate template not found. Please contact admin.");
-      });
-  };
-
-  // Generate PDF for enrollment
-  const generateEnrollmentPDF = (enrollment) => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 20;
-    let y = 20;
-
-    // Header
-    doc.setFillColor(0, 102, 204);
-    doc.rect(0, 0, pageWidth, 35, "F");
-    doc.setFontSize(18);
-    doc.setTextColor(255, 255, 255);
-    doc.text("ENROLLMENT CERTIFICATE", pageWidth / 2, y, { align: "center" });
-    y = 45;
-
-    // Enrollment Info
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    doc.setFont("helvetica", "bold");
-    doc.text("Enrollment Information", margin, y);
-    y += 8;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.text(`Enrollment Number: ${enrollment.enrollmentNo || "-"}`, margin, y);
-    y += 6;
-    doc.text(`Roll Number: ${enrollment.rollNumber || "-"}`, margin, y);
-    y += 12;
-
-    // Personal Details
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text("Personal Details", margin, y);
-    y += 8;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.text(`Name: ${enrollment.name || "-"}`, margin, y);
-    y += 6;
-    doc.text(`Father's Name: ${enrollment.fatherName || "-"}`, margin, y);
-    y += 6;
-    doc.text(`Mother's Name: ${enrollment.motherName || "-"}`, margin, y);
-    y += 6;
-    doc.text(`Date of Birth: ${enrollment.dob ? new Date(enrollment.dob).toLocaleDateString() : "-"}`, margin, y);
-    y += 12;
-
-    // Course Details
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text("Course Details", margin, y);
-    y += 8;
-
-    if (enrollment.courses && enrollment.courses.length > 0) {
-      enrollment.courses.forEach((course, index) => {
-        doc.setFillColor(240, 240, 240);
-        doc.rect(margin, y, pageWidth - 2 * margin, 35, "F");
-        doc.setFontSize(9);
-        doc.setTextColor(0, 0, 0);
-        doc.setFont("helvetica", "bold");
-        doc.text(`Course ${index + 1}: ${course.courseName || "-"}`, margin + 2, y + 6);
-        doc.setFont("helvetica", "normal");
-        doc.text(`Center: ${enrollment.centerName || "-"}`, margin + 2, y + 13);
-        doc.text(`Session: ${course.sessionStart ? new Date(course.sessionStart).getFullYear() : "-"} - ${course.sessionEnd ? new Date(course.sessionEnd).getFullYear() : "-"}`, margin + 2, y + 20);
-        doc.text(`Fee: Rs.${course.feeAmount || 0} | Paid: Rs.${course.amountPaid || 0}`, margin + 2, y + 27);
-        doc.text(`Fees Paid: ${course.feesPaid ? "Yes" : "No"}`, margin + 100, y + 27);
-        y += 40;
-      });
-    } else {
-      doc.setFontSize(10);
-      doc.setTextColor(0, 0, 0);
-      doc.text(`Course: ${enrollment.course || "-"}`, margin, y);
-      y += 6;
-      doc.text(`Center: ${enrollment.centerName || "-"}`, margin, y);
-      y += 6;
-      doc.text(`Session: ${enrollment.sessionStart ? new Date(enrollment.sessionStart).getFullYear() : "-"} - ${enrollment.sessionEnd ? new Date(enrollment.sessionEnd).getFullYear() : "-"}`, margin, y);
-      y += 12;
+    setCertDownloading((prev) => ({ ...prev, [idx]: true }));
+    try {
+      await window.CertificateGenerator.loadTemplate("/student-certificate-template.jpeg");
+      await window.CertificateGenerator.download(buildCertGenData(cert));
+    } catch (err) {
+      console.error("Certificate download error:", err);
+      alert("Failed to generate certificate PDF.");
+    } finally {
+      setCertDownloading((prev) => ({ ...prev, [idx]: false }));
     }
+  };
 
-    // Fee Summary
-    doc.setFillColor(0, 102, 204);
-    doc.rect(margin, y, pageWidth - 2 * margin, 30, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text("FEE SUMMARY", pageWidth / 2, y + 8, { align: "center" });
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Total Fee: Rs.${enrollment.feeAmount || 0}`, margin + 10, y + 18);
-    doc.text(`Amount Paid: Rs.${enrollment.amountPaid || 0}`, margin + 70, y + 18);
-    doc.text(`Pending: Rs.${enrollment.pendingAmount || 0}`, margin + 130, y + 18);
-    y += 35;
-
-    // Status
-    doc.setFontSize(10);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Fees Paid: ${enrollment.feesPaid ? "YES" : "NO"}`, margin, y);
-    doc.text(`Certified: ${enrollment.isCertified ? "YES" : "NO"}`, margin + 70, y);
-    if (enrollment.joinDate) {
-      doc.text(`Join Date: ${new Date(enrollment.joinDate).toLocaleDateString()}`, margin + 130, y);
+  const renderCertPreview = async (cert, idx) => {
+    if (certPreviewUrls[idx]) return;
+    if (!window.CertificateGenerator) return;
+    try {
+      await window.CertificateGenerator.loadTemplate("/student-certificate-template.jpeg");
+      const url = await window.CertificateGenerator.preview(buildCertGenData(cert));
+      setCertPreviewUrls((prev) => ({ ...prev, [idx]: url }));
+    } catch (err) {
+      console.error("Preview error:", err);
     }
-
-    // Footer
-    const footerY = doc.internal.pageSize.getHeight() - 20;
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text("This is a computer-generated document. Verification can be done on the website.", pageWidth / 2, footerY, { align: "center" });
-
-    return doc;
   };
 
-  // Download enrollment info as PDF
-  const downloadEnrollmentPDF = () => {
-    if (!myEnrollment) return;
-    const doc = generateEnrollmentPDF(myEnrollment);
-    doc.save(`enrollment_${myEnrollment.enrollmentNo || "student"}.pdf`);
-  };
+  const fmt = (date) => date ? new Date(date).toLocaleDateString("en-IN") : "-";
+  const sessionRange = (s) =>
+    s.sessionStart && s.sessionEnd
+      ? `${fmt(s.sessionStart)} - ${fmt(s.sessionEnd)}`
+      : "-";
 
-  // If logged in, show student's own enrollment
+  // ── Logged-in student view ──────────────────────────────────────────────────
   if (isLoggedIn) {
     return (
       <div className="container py-5">
-        <h2 className="text-center mb-4">My Enrollment Details</h2>
+        <h2 className="text-center mb-4">Student Portal</h2>
+        <ul className="nav nav-tabs mb-4">
+          <li className="nav-item">
+            <button className={`nav-link ${activeTab === "enrollment" ? "active" : ""}`} onClick={() => setActiveTab("enrollment")}>
+              <i className="bi bi-person-badge me-2"></i>My Enrollment
+            </button>
+          </li>
+          <li className="nav-item">
+            <button className={`nav-link ${activeTab === "certificate" ? "active" : ""}`} onClick={() => setActiveTab("certificate")}>
+              <i className="bi bi-award me-2"></i>My Certificates
+            </button>
+          </li>
+        </ul>
 
-        {loadingMyEnrollment ? (
-          <div className="text-center">
-            <p>Loading your enrollment details...</p>
-          </div>
-        ) : myEnrollment ? (
-          <div className="card shadow-sm">
-            <div className="card-body">
-              <div className="row mb-3">
-                <div className="col-md-6">
-                  <p><strong>Enrollment Number:</strong> {myEnrollment.enrollmentNo}</p>
-                </div>
-                <div className="col-md-6">
-                  <p><strong>Roll Number:</strong> {myEnrollment.rollNumber}</p>
-                </div>
-              </div>
+        {activeTab === "enrollment" && (
+          loadingMyEnrollment ? (
+            <p className="text-center">Loading...</p>
+          ) : myEnrollment ? (
+            <EnrollmentDetails student={myEnrollment} />
+          ) : (
+            <div className="alert alert-warning">Unable to load enrollment details. Please contact your center.</div>
+          )
+        )}
 
-              <h5 className="border-bottom pb-2 mb-3">Personal Details</h5>
-              <div className="row mb-3">
-                <div className="col-md-6">
-                  <p><strong>Name:</strong> {myEnrollment.name}</p>
-                  <p><strong>Father's Name:</strong> {myEnrollment.fatherName || "-"}</p>
-                  <p><strong>Mother's Name:</strong> {myEnrollment.motherName || "-"}</p>
-                </div>
-                <div className="col-md-6">
-                  <p><strong>Date of Birth:</strong> {myEnrollment.dob ? new Date(myEnrollment.dob).toLocaleDateString() : "-"}</p>
-                </div>
-              </div>
-
-              <h5 className="border-bottom pb-2 mb-3">Course Details</h5>
-
-              {/* Show all enrolled courses */}
-              {myEnrollment.courses && myEnrollment.courses.length > 0 ? (
-                myEnrollment.courses.map((course, index) => (
-                  <div key={index} className="card mb-3">
-                    <div className="card-body">
-                      <h6 className="card-subtitle mb-2 text-muted">Course {index + 1}</h6>
-                      <div className="row">
-                        <div className="col-md-6">
-                          <p><strong>Course:</strong> {course.courseName || "-"}</p>
-                          <p><strong>Center:</strong> {myEnrollment.centerName || "-"}</p>
-                          <p><strong>Session:</strong> {course.sessionStart ? new Date(course.sessionStart).getFullYear() : "-"} - {course.sessionEnd ? new Date(course.sessionEnd).getFullYear() : "-"}</p>
-                        </div>
-                        <div className="col-md-6">
-                          <p><strong>Fee:</strong> ₹{course.feeAmount || 0}</p>
-                          <p><strong>Paid:</strong> ₹{course.amountPaid || 0}</p>
-                          <p>
-                            <strong>Pending:</strong>{" "}
-                            <span className={`badge ${((course.feeAmount || 0) - (course.amountPaid || 0)) > 0 ? "bg-danger" : "bg-success"}`}>
-                              ₹{(course.feeAmount || 0) - (course.amountPaid || 0)}
-                            </span>
-                          </p>
-                          <p><strong>Paid?</strong> {course.feesPaid ? "Yes" : "No"}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="row mb-3">
-                  <div className="col-md-6">
-                    <p><strong>Course:</strong> {myEnrollment.course || "-"}</p>
-                    <p><strong>Center:</strong> {myEnrollment.centerName || "-"}</p>
-                  </div>
-                  <div className="col-md-6">
-                    <p><strong>Session:</strong> {myEnrollment.sessionStart ? new Date(myEnrollment.sessionStart).getFullYear() : "-"} - {myEnrollment.sessionEnd ? new Date(myEnrollment.sessionEnd).getFullYear() : "-"}</p>
-                    <p><strong>Join Date:</strong> {myEnrollment.joinDate ? new Date(myEnrollment.joinDate).toLocaleDateString() : "-"}</p>
-                  </div>
-                </div>
-              )}
-
-              <h5 className="border-bottom pb-2 mb-3">Status</h5>
-              <div className="row mb-3">
-                <div className="col-md-6">
-                  <p>
-                    <strong>Fees Paid:</strong>{" "}
-                    <span className={`badge ${myEnrollment.feesPaid ? "bg-success" : "bg-warning"}`}>
-                      {myEnrollment.feesPaid ? "Yes" : "No"}
-                    </span>
-                  </p>
-                </div>
-                <div className="col-md-6">
-                  <p>
-                    <strong>Certified:</strong>{" "}
-                    <span className={`badge ${myEnrollment.isCertified ? "bg-success" : "bg-secondary"}`}>
-                      {myEnrollment.isCertified ? "Yes" : "No"}
-                    </span>
-                  </p>
-                </div>
-              </div>
-
-              <h5 className="border-bottom pb-2 mb-3">Fee Details</h5>
-              <div className="row mb-3">
-                <div className="col-md-4">
-                  <p><strong>Total Fee:</strong> ₹{myEnrollment.feeAmount || 0}</p>
-                </div>
-                <div className="col-md-4">
-                  <p><strong>Amount Paid:</strong> ₹{myEnrollment.amountPaid || 0}</p>
-                </div>
-                <div className="col-md-4">
-                  <p>
-                    <strong>Pending:</strong>{" "}
-                    <span className={`badge ${(myEnrollment.pendingAmount || 0) > 0 ? "bg-danger" : "bg-success"}`}>
-                      ₹{myEnrollment.pendingAmount || 0}
-                    </span>
-                  </p>
-                </div>
-              </div>
-
-              <div className="text-center mt-4">
-                <button className="btn btn-primary" onClick={downloadEnrollmentPDF}>
-                  <i className="bi bi-download me-2"></i>
-                  Download Enrollment Info
-                </button>
-              </div>
+        {activeTab === "certificate" && (
+          loadingMyCertificates ? (
+            <p className="text-center">Loading...</p>
+          ) : myCertificates.length > 0 ? (
+            <div>
+              {myCertificates.map((cert, idx) => (
+                <CertificateCard
+                  key={idx}
+                  cert={cert}
+                  idx={idx}
+                  downloading={certDownloading[idx]}
+                  previewUrl={certPreviewUrls[idx]}
+                  onDownload={() => downloadCertPDF(cert, idx)}
+                  onPreview={() => renderCertPreview(cert, idx)}
+                />
+              ))}
             </div>
-          </div>
-        ) : (
-          <div className="alert alert-warning">
-            Unable to load your enrollment details. Please contact your center.
-          </div>
+          ) : (
+            <div className="alert alert-warning">No certificates found. Please contact your center.</div>
+          )
         )}
       </div>
     );
   }
 
-  // Public verification form for non-logged-in users
+  // ── Public verification ────────────────────────────────────────────────────
   return (
     <div className="container py-5">
       <h2 className="text-center mb-4">Verification Portal</h2>
 
-      {/* Tabs for switching between Enrollment and Certificate verification */}
       <ul className="nav nav-tabs mb-4">
         <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === "enrollment" ? "active" : ""}`}
-            onClick={() => setActiveTab("enrollment")}
-          >
-            <i className="bi bi-person-badge me-2"></i>
-            Enrollment Verification
+          <button className={`nav-link ${activeTab === "enrollment" ? "active" : ""}`} onClick={() => setActiveTab("enrollment")}>
+            <i className="bi bi-person-badge me-2"></i>Enrollment Verification
           </button>
         </li>
         <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === "certificate" ? "active" : ""}`}
-            onClick={() => setActiveTab("certificate")}
-          >
-            <i className="bi bi-award me-2"></i>
-            Certificate Verification
+          <button className={`nav-link ${activeTab === "certificate" ? "active" : ""}`} onClick={() => setActiveTab("certificate")}>
+            <i className="bi bi-award me-2"></i>Certificate Verification
           </button>
         </li>
       </ul>
 
-      {/* Enrollment Verification Tab */}
+      {/* ── Enrollment Tab ── */}
       {activeTab === "enrollment" && (
         <>
           <h4 className="mb-3">Enrollment Verification</h4>
           <p className="text-muted mb-4">Enter your enrollment number and date of birth to verify your enrollment details.</p>
 
-          <form onSubmit={handleSubmit} className="card p-4 mx-auto" style={{ maxWidth: 500 }}>
+          <form onSubmit={handleEnrollmentSubmit} className="card p-4 mx-auto" style={{ maxWidth: 500 }}>
             <div className="mb-3">
               <label className="form-label">Enrollment Number</label>
-              <input 
-                className="form-control" 
-                placeholder="Enter Enrollment No"
-                value={enrollmentNo} 
-                onChange={(e) => setEnrollmentNo(e.target.value)} 
+              <input
+                className="form-control"
+                placeholder="e.g. SG124368"
+                value={enrollmentNo}
+                onChange={(e) => setEnrollmentNo(e.target.value)}
+                required
               />
             </div>
             <div className="mb-3">
               <label className="form-label">Date of Birth</label>
-              <input 
-                type="date" 
+              <input
+                type="date"
                 className="form-control"
-                value={dob} 
-                onChange={(e) => setDob(e.target.value)} 
+                value={dob}
+                onChange={(e) => setDob(e.target.value)}
               />
             </div>
             <button className="btn btn-primary w-100" disabled={loading}>
@@ -418,44 +250,12 @@ export default function StudentEnrollmentVerification() {
             </button>
           </form>
 
-          {error && <div className="alert alert-danger mt-3">{error}</div>}
-
-          {result && (
-            <div className="card mt-4 p-4 mx-auto" style={{ maxWidth: 500 }}>
-              <div className="text-center mb-3">
-                <i className="bi bi-check-circle-fill text-success" style={{ fontSize: "3rem" }}></i>
-              </div>
-              <h5 className="text-center mb-3">Verification Successful</h5>
-              <table className="table table-bordered">
-                <tbody>
-                  <tr>
-                    <th>Name</th>
-                    <td>{result.name}</td>
-                  </tr>
-                  <tr>
-                    <th>Course</th>
-                    <td>{result.course}</td>
-                  </tr>
-                  <tr>
-                    <th>Session</th>
-                    <td>{result.session}</td>
-                  </tr>
-                  <tr>
-                    <th>Status</th>
-                    <td>
-                      <span className={`badge ${result.status === 'Certified' ? 'bg-success' : 'bg-primary'}`}>
-                        {result.status}
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
+          {error && <div className="alert alert-danger mt-3 mx-auto" style={{ maxWidth: 500 }}>{error}</div>}
+          {result && <EnrollmentDetails student={result} />}
         </>
       )}
 
-      {/* Certificate Verification Tab */}
+      {/* ── Certificate Tab ── */}
       {activeTab === "certificate" && (
         <>
           <h4 className="mb-3">Certificate Verification</h4>
@@ -464,83 +264,268 @@ export default function StudentEnrollmentVerification() {
           <form onSubmit={handleCertSubmit} className="card p-4 mx-auto" style={{ maxWidth: 500 }}>
             <div className="mb-3">
               <label className="form-label">Enrollment Number</label>
-              <input 
-                className="form-control" 
-                placeholder="Enter Enrollment No"
-                value={certEnrollmentNo} 
-                onChange={(e) => setCertEnrollmentNo(e.target.value)} 
+              <input
+                className="form-control"
+                placeholder="e.g. SG124368"
+                value={certEnrollmentNo}
+                onChange={(e) => setCertEnrollmentNo(e.target.value)}
+                required
               />
             </div>
             <div className="mb-3">
               <label className="form-label">Date of Birth</label>
-              <input 
-                type="date" 
+              <input
+                type="date"
                 className="form-control"
-                value={certDob} 
-                onChange={(e) => setCertDob(e.target.value)} 
+                value={certDob}
+                onChange={(e) => setCertDob(e.target.value)}
               />
             </div>
             <button className="btn btn-success w-100" disabled={certLoading}>
-              {certLoading ? "Verifying..." : "Verify & Download"}
+              {certLoading ? "Verifying..." : "Verify"}
             </button>
           </form>
 
-          {certError && <div className="alert alert-danger mt-3">{certError}</div>}
+          {certError && <div className="alert alert-danger mt-3 mx-auto" style={{ maxWidth: 500 }}>{certError}</div>}
 
-          {certResult && certResult.length > 0 && (
+          {certResults && certResults.length > 0 && (
             <div className="mt-4">
               <div className="text-center mb-3">
-                <i className="bi bi-check-circle-fill text-success" style={{ fontSize: "3rem" }}></i>
+                <i className="bi bi-check-circle-fill text-success" style={{ fontSize: "2rem" }}></i>
+                <p className="mt-1 text-success fw-semibold">
+                  {certResults.length} certificate{certResults.length > 1 ? "s" : ""} found
+                </p>
               </div>
-              <h5 className="text-center mb-3">Certificate Found!</h5>
-              
-              {certResult.map((cert, index) => (
-                <div key={index} className="card mb-3 mx-auto" style={{ maxWidth: 500 }}>
-                  <div className="card-body">
-                    <h6 className="card-title">
-                      <i className="bi bi-award me-2"></i>
-                      {cert.courseName || `Certificate ${index + 1}`}
-                    </h6>
-                    <table className="table table-sm mb-3">
-                      <tbody>
-                        <tr>
-                          <th>Certificate No.</th>
-                          <td>{cert.certificateNumber || "-"}</td>
-                        </tr>
-                        <tr>
-                          <th>Enrollment No.</th>
-                          <td>{cert.enrollmentNumber || "-"}</td>
-                        </tr>
-                        <tr>
-                          <th>Name</th>
-                          <td>{cert.name || "-"}</td>
-                        </tr>
-                        <tr>
-                          <th>Issue Date</th>
-                          <td>{cert.issueDate ? new Date(cert.issueDate).toLocaleDateString() : "-"}</td>
-                        </tr>
-                        {cert.renewalDate && (
-                          <tr>
-                            <th>Renewal Date</th>
-                            <td>{new Date(cert.renewalDate).toLocaleDateString()}</td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                    <button 
-                      className="btn btn-primary w-100"
-                      onClick={() => downloadCertificatePDF(cert)}
-                    >
-                      <i className="bi bi-download me-2"></i>
-                      Download Certificate
-                    </button>
-                  </div>
-                </div>
+              {certResults.map((cert, idx) => (
+                <CertificateCard
+                  key={idx}
+                  cert={cert}
+                  idx={idx}
+                  downloading={certDownloading[idx]}
+                  previewUrl={certPreviewUrls[idx]}
+                  onDownload={() => downloadCertPDF(cert, idx)}
+                  onPreview={() => renderCertPreview(cert, idx)}
+                />
               ))}
             </div>
           )}
         </>
       )}
+    </div>
+  );
+}
+
+// ── Enrollment Details Card ─────────────────────────────────────────────────
+function EnrollmentDetails({ student }) {
+  const fmt = (date) => date ? new Date(date).toLocaleDateString("en-IN") : "-";
+  const pending = (student.feeAmount || 0) - (student.amountPaid || 0);
+
+  return (
+    <div className="card shadow-sm mt-4 mx-auto" style={{ maxWidth: 900 }}>
+      <div className="card-header bg-primary text-white d-flex align-items-center gap-2">
+        {student.photo && (
+          <img
+            src={student.photo}
+            alt="Student"
+            style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", border: "2px solid white" }}
+          />
+        )}
+        <div>
+          <h5 className="mb-0">{student.name}</h5>
+          <small>Enrollment No: {student.enrollmentNo || student.rollNumber || "-"}</small>
+        </div>
+        <span className={`ms-auto badge ${student.isCertified ? "bg-success" : "bg-light text-dark"}`}>
+          {student.isCertified ? "Certified" : "Enrolled"}
+        </span>
+      </div>
+
+      <div className="card-body">
+        <div className="row">
+          {/* Personal Information */}
+          <div className="col-md-6 mb-4">
+            <h6 className="border-bottom pb-2 mb-3 text-primary">Personal Information</h6>
+            <p className="mb-1"><strong>Name:</strong> {student.name || "-"}</p>
+            <p className="mb-1"><strong>Father's Name:</strong> {student.fatherName || "-"}</p>
+            <p className="mb-1"><strong>Mother's Name:</strong> {student.motherName || "-"}</p>
+            <p className="mb-1"><strong>Gender:</strong> {student.gender || "-"}</p>
+            <p className="mb-1"><strong>Date of Birth:</strong> {fmt(student.dob)}</p>
+          </div>
+
+          {/* Contact Information */}
+          <div className="col-md-6 mb-4">
+            <h6 className="border-bottom pb-2 mb-3 text-primary">Contact Information</h6>
+            <p className="mb-1"><strong>Email:</strong> {student.email || "-"}</p>
+            <p className="mb-1"><strong>Mobile:</strong> {student.mobile || "-"}</p>
+            <p className="mb-1"><strong>State:</strong> {student.state || "-"}</p>
+            <p className="mb-1"><strong>District:</strong> {student.district || "-"}</p>
+            <p className="mb-1"><strong>Address:</strong> {student.address || "-"}</p>
+          </div>
+
+          {/* Academic Information */}
+          <div className="col-md-6 mb-4">
+            <h6 className="border-bottom pb-2 mb-3 text-primary">Academic Information</h6>
+            <p className="mb-1"><strong>Roll Number:</strong> {student.rollNumber || "-"}</p>
+            <p className="mb-1"><strong>Enrollment No:</strong> {student.enrollmentNo || "-"}</p>
+            <p className="mb-1"><strong>Course:</strong> {student.courseName || "-"}</p>
+            <p className="mb-1"><strong>Exam Passed:</strong> {student.examPassed || "-"}</p>
+            <p className="mb-1"><strong>Board:</strong> {student.board || "-"}</p>
+            <p className="mb-1"><strong>Marks/Grade:</strong> {student.marksOrGrade || "-"}</p>
+          </div>
+
+          {/* Fee Details */}
+          <div className="col-md-6 mb-4">
+            <h6 className="border-bottom pb-2 mb-3 text-primary">Fee Details</h6>
+            <p className="mb-1"><strong>Total Fee:</strong> ₹{student.feeAmount || 0}</p>
+            <p className="mb-1"><strong>Amount Paid:</strong> ₹{student.amountPaid || 0}</p>
+            <p className="mb-1">
+              <strong>Pending:</strong>{" "}
+              <span className={`badge ${pending > 0 ? "bg-danger" : "bg-success"}`}>₹{pending}</span>
+            </p>
+            <p className="mb-1">
+              <strong>Fees Paid:</strong>{" "}
+              <span className={`badge ${student.feesPaid ? "bg-success" : "bg-warning text-dark"}`}>
+                {student.feesPaid ? "Yes" : "Partial / No"}
+              </span>
+            </p>
+          </div>
+
+          {/* Course Details (multi-course) */}
+          {student.courses && student.courses.length > 0 && (
+            <div className="col-12 mb-4">
+              <h6 className="border-bottom pb-2 mb-3 text-primary">Enrolled Courses</h6>
+              <div className="row">
+                {student.courses.map((c, i) => {
+                  const cp = (c.feeAmount || 0) - (c.amountPaid || 0);
+                  return (
+                    <div key={i} className="col-md-6 mb-3">
+                      <div className="card border">
+                        <div className="card-body p-3">
+                          <h6 className="card-title mb-2">{c.courseName || `Course ${i + 1}`}</h6>
+                          <p className="mb-1 small"><strong>Session:</strong>{" "}
+                            {c.sessionStart ? new Date(c.sessionStart).getFullYear() : "-"} –{" "}
+                            {c.sessionEnd ? new Date(c.sessionEnd).getFullYear() : "-"}
+                          </p>
+                          <p className="mb-1 small"><strong>Fee:</strong> ₹{c.feeAmount || 0}</p>
+                          <p className="mb-1 small"><strong>Paid:</strong> ₹{c.amountPaid || 0}</p>
+                          <p className="mb-0 small">
+                            <strong>Pending:</strong>{" "}
+                            <span className={`badge ${cp > 0 ? "bg-danger" : "bg-success"}`}>₹{cp}</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Center Information */}
+          <div className="col-12">
+            <h6 className="border-bottom pb-2 mb-3 text-primary">Center Information</h6>
+            <p className="mb-1"><strong>Center:</strong> {student.centerName || "-"}</p>
+            <p className="mb-1">
+              <strong>Session:</strong>{" "}
+              {student.sessionStart && student.sessionEnd
+                ? `${new Date(student.sessionStart).toLocaleDateString("en-IN")} - ${new Date(student.sessionEnd).toLocaleDateString("en-IN")}`
+                : "-"}
+            </p>
+            {student.joinDate && (
+              <p className="mb-1"><strong>Join Date:</strong> {new Date(student.joinDate).toLocaleDateString("en-IN")}</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Certificate Card ────────────────────────────────────────────────────────
+function CertificateCard({ cert, idx, downloading, previewUrl, onDownload, onPreview }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const handleExpand = () => {
+    if (!expanded) onPreview();
+    setExpanded((v) => !v);
+  };
+
+  // Use stored image if available, otherwise use generated preview
+  const imageToShow = cert.certificateImage || previewUrl;
+
+  return (
+    <div className="card shadow-sm mb-4 mx-auto" style={{ maxWidth: 800 }}>
+      <div className="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <i className="bi bi-award-fill text-warning me-2"></i>
+          <strong>{cert.courseName || `Certificate ${idx + 1}`}</strong>
+          <span className="ms-2 text-muted small">#{cert.certificateNumber}</span>
+        </div>
+        <div className="d-flex gap-2">
+          <button
+            className="btn btn-sm btn-outline-secondary"
+            onClick={handleExpand}
+          >
+            <i className={`bi bi-${expanded ? "eye-slash" : "eye"} me-1`}></i>
+            {expanded ? "Hide" : "View"}
+          </button>
+          <button
+            className="btn btn-sm btn-primary"
+            onClick={onDownload}
+            disabled={downloading}
+          >
+            {downloading ? (
+              <><span className="spinner-border spinner-border-sm me-1"></span>Generating...</>
+            ) : (
+              <><i className="bi bi-download me-1"></i>Download PDF</>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Certificate image */}
+      {expanded && (
+        <div className="card-body p-2 text-center bg-light">
+          {imageToShow ? (
+            <img
+              src={imageToShow}
+              alt={`Certificate ${cert.certificateNumber}`}
+              style={{ maxWidth: "100%", borderRadius: 4, boxShadow: "0 2px 12px rgba(0,0,0,0.15)" }}
+            />
+          ) : (
+            <div className="py-4 text-muted">
+              <div className="spinner-border spinner-border-sm me-2"></div>
+              Generating preview...
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Details */}
+      <div className="card-body">
+        <div className="row g-2">
+          <div className="col-sm-6">
+            <p className="mb-1"><strong>Name:</strong> {cert.name || "-"}</p>
+            <p className="mb-1"><strong>Father's Name:</strong> {cert.fatherName || "-"}</p>
+            <p className="mb-1"><strong>Enrollment No:</strong> {cert.enrollmentNumber || "-"}</p>
+          </div>
+          <div className="col-sm-6">
+            <p className="mb-1"><strong>Course:</strong> {cert.courseName || "-"}</p>
+            <p className="mb-1">
+              <strong>Grade:</strong>{" "}
+              <span className="badge bg-success">{cert.grade || "-"}</span>
+            </p>
+            <p className="mb-1">
+              <strong>Session:</strong> {cert.sessionFrom || "-"} – {cert.sessionTo || "-"}
+            </p>
+          </div>
+          <div className="col-sm-6">
+            <p className="mb-1"><strong>Issue Date:</strong> {cert.issueDate ? new Date(cert.issueDate).toLocaleDateString("en-IN") : "-"}</p>
+          </div>
+          <div className="col-sm-6">
+            <p className="mb-1"><strong>Center:</strong> {cert.centerName || cert.atcName || "-"}</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
