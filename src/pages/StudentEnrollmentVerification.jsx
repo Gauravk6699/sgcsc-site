@@ -11,12 +11,7 @@ export default function StudentEnrollmentVerification() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Certificate state
-  const [certEnrollmentNo, setCertEnrollmentNo] = useState("");
-  const [certDob, setCertDob] = useState("");
-  const [certResults, setCertResults] = useState(null);
-  const [certError, setCertError] = useState("");
-  const [certLoading, setCertLoading] = useState(false);
+  // My certificates state (logged-in only)
   const [certPreviewUrls, setCertPreviewUrls] = useState({});
   const [certDownloading, setCertDownloading] = useState({});
 
@@ -73,29 +68,6 @@ export default function StudentEnrollmentVerification() {
       setError("No record found. Please check your enrollment number and date of birth.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleCertSubmit = async (e) => {
-    e.preventDefault();
-    setCertError("");
-    setCertResults(null);
-    setCertPreviewUrls({});
-    setCertLoading(true);
-    try {
-      const res = await API.post("/public/certificate", {
-        enrollmentNumber: certEnrollmentNo,
-        dob: certDob,
-      });
-      if (res.data.success && res.data.data) {
-        setCertResults(res.data.data);
-      } else {
-        setCertError("No certificate found.");
-      }
-    } catch {
-      setCertError("No certificate found.");
-    } finally {
-      setCertLoading(false);
     }
   };
 
@@ -249,131 +221,44 @@ export default function StudentEnrollmentVerification() {
   // ── Public verification ────────────────────────────────────────────────────
   return (
     <div className="container py-5">
-      <h2 className="text-center mb-4">Verification Portal</h2>
+      <h2 className="text-center mb-4">Enrollment Verification</h2>
 
-      <ul className="nav nav-tabs mb-4">
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === "enrollment" ? "active" : ""}`}
-            onClick={() => setActiveTab("enrollment")}
-          >
-            <i className="bi bi-person-badge me-2"></i>Enrollment Verification
-          </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === "certificate" ? "active" : ""}`}
-            onClick={() => setActiveTab("certificate")}
-          >
-            <i className="bi bi-award me-2"></i>Certificate Verification
-          </button>
-        </li>
-      </ul>
+      <h4 className="mb-3">Verify Your Enrollment</h4>
+      <p className="text-muted mb-4">
+        Enter your enrollment number to verify your enrollment details.
+      </p>
 
-      {/* ── Enrollment Tab ── */}
-      {activeTab === "enrollment" && (
-        <>
-          <h4 className="mb-3">Enrollment Verification</h4>
-          <p className="text-muted mb-4">
-            Enter your enrollment number to verify your enrollment details.
-          </p>
+      <form onSubmit={handleEnrollmentSubmit} className="card p-4 mx-auto" style={{ maxWidth: 500 }}>
+        <div className="mb-3">
+          <label className="form-label">Enrollment Number / Roll Number</label>
+          <input
+            className="form-control"
+            placeholder="e.g. SG124368"
+            value={enrollmentNo}
+            onChange={(e) => setEnrollmentNo(e.target.value)}
+            required
+          />
+        </div>
+        <div className="mb-3">
+          <label className="form-label">Date of Birth <span className="text-muted small">(optional, for extra verification)</span></label>
+          <input
+            type="date"
+            className="form-control"
+            value={dob}
+            onChange={(e) => setDob(e.target.value)}
+          />
+        </div>
+        <button className="btn btn-primary w-100" disabled={loading}>
+          {loading ? "Verifying..." : "Verify"}
+        </button>
+      </form>
 
-          <form onSubmit={handleEnrollmentSubmit} className="card p-4 mx-auto" style={{ maxWidth: 500 }}>
-            <div className="mb-3">
-              <label className="form-label">Enrollment Number / Roll Number</label>
-              <input
-                className="form-control"
-                placeholder="e.g. SG124368"
-                value={enrollmentNo}
-                onChange={(e) => setEnrollmentNo(e.target.value)}
-                required
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">Date of Birth <span className="text-muted small">(optional, for extra verification)</span></label>
-              <input
-                type="date"
-                className="form-control"
-                value={dob}
-                onChange={(e) => setDob(e.target.value)}
-              />
-            </div>
-            <button className="btn btn-primary w-100" disabled={loading}>
-              {loading ? "Verifying..." : "Verify"}
-            </button>
-          </form>
-
-          {error && (
-            <div className="alert alert-danger mt-3 mx-auto" style={{ maxWidth: 500 }}>
-              {error}
-            </div>
-          )}
-          {result && <EnrollmentDetails student={result} />}
-        </>
+      {error && (
+        <div className="alert alert-danger mt-3 mx-auto" style={{ maxWidth: 500 }}>
+          {error}
+        </div>
       )}
-
-      {/* ── Certificate Tab ── */}
-      {activeTab === "certificate" && (
-        <>
-          <h4 className="mb-3">Certificate Verification</h4>
-          <p className="text-muted mb-4">
-            Enter your enrollment number to verify and download your certificates.
-          </p>
-
-          <form onSubmit={handleCertSubmit} className="card p-4 mx-auto" style={{ maxWidth: 500 }}>
-            <div className="mb-3">
-              <label className="form-label">Enrollment Number</label>
-              <input
-                className="form-control"
-                placeholder="e.g. SG124368"
-                value={certEnrollmentNo}
-                onChange={(e) => setCertEnrollmentNo(e.target.value)}
-                required
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">Date of Birth <span className="text-muted small">(optional)</span></label>
-              <input
-                type="date"
-                className="form-control"
-                value={certDob}
-                onChange={(e) => setCertDob(e.target.value)}
-              />
-            </div>
-            <button className="btn btn-success w-100" disabled={certLoading}>
-              {certLoading ? "Verifying..." : "Verify"}
-            </button>
-          </form>
-
-          {certError && (
-            <div className="alert alert-danger mt-3 mx-auto" style={{ maxWidth: 500 }}>
-              {certError}
-            </div>
-          )}
-
-          {certResults && certResults.length > 0 && (
-            <div className="mt-4">
-              <div className="text-center mb-3">
-                <i className="bi bi-check-circle-fill text-success" style={{ fontSize: "2rem" }}></i>
-                <p className="mt-1 text-success fw-semibold">
-                  {certResults.length} certificate{certResults.length > 1 ? "s" : ""} found
-                </p>
-              </div>
-              {certResults.map((cert, idx) => (
-                <CertificateCard
-                  key={idx}
-                  cert={cert}
-                  idx={idx}
-                  downloading={certDownloading[idx]}
-                  previewUrl={certPreviewUrls[idx]}
-                  onDownload={() => downloadCertPDF(cert, idx)}
-                  onPreview={() => renderCertPreview(cert, idx, setCertPreviewUrls)}
-                />
-              ))}
-            </div>
-          )}
-        </>
-      )}
+      {result && <EnrollmentDetails student={result} />}
     </div>
   );
 }

@@ -49,6 +49,7 @@ import StudentAdmitCard from "./pages/StudentAdmitCard";
 
 import StudentEnrollmentVerification from "./pages/StudentEnrollmentVerification";
 import StudentResultVerification from "./pages/StudentResultVerification";
+import CertificateVerification from "./pages/CertificateVerification";
 
 
 
@@ -135,6 +136,11 @@ export default function App() {
 <Route
   path="/student/result-verification"
   element={<StudentResultVerification />}
+/>
+
+<Route
+  path="/student/certificate-verification"
+  element={<CertificateVerification />}
 />
 
 
