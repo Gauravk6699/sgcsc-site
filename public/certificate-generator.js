@@ -68,24 +68,46 @@ var CertificateGenerator = (() => {
 
   function _pct(val, total) { return (val / 100) * total; }
 
-  // Load an image with crossOrigin=anonymous (required for toDataURL without canvas taint).
-  // If the server does not send CORS headers the load will fail — resolve(null) so the
-  // canvas stays untainted and all text fields / QR still render correctly.
+  // Load an image via fetch() → blob URL so the canvas is never tainted regardless of
+  // CORS browser-cache state.  Falls back to crossOrigin=anonymous if fetch is unavailable.
+  // Always resolves (never rejects) so a broken photo cannot interrupt the render.
   function _loadImage(src, timeout = 10000) {
     return new Promise((resolve) => {
       if (!src) { resolve(null); return; }
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      const timer = setTimeout(() => { img.src = ''; resolve(null); }, timeout);
-      img.onload  = () => { clearTimeout(timer); resolve(img); };
-      // onerror fires when the server lacks CORS headers — resolve null, never reject,
-      // so the canvas is never tainted and toDataURL() works for all subsequent draws.
-      img.onerror = () => {
-        clearTimeout(timer);
-        console.warn('[CertGen] Photo skipped (CORS/load error):', src);
+
+      const done = (val) => { clearTimeout(timer); resolve(val); };
+      const timer = setTimeout(() => {
+        if (ctrl) ctrl.abort();
         resolve(null);
-      };
-      img.src = src;
+      }, timeout);
+
+      // fetch → blob URL sidesteps the browser's image CORS cache entirely
+      var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+      var fetchOpts = ctrl ? { signal: ctrl.signal } : {};
+      fetch(src, fetchOpts)
+        .then(function(r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.blob();
+        })
+        .then(function(blob) {
+          var blobUrl = URL.createObjectURL(blob);
+          var img = new Image();
+          img.onload  = function() { URL.revokeObjectURL(blobUrl); done(img); };
+          img.onerror = function() { URL.revokeObjectURL(blobUrl); done(null); };
+          img.src = blobUrl;
+        })
+        .catch(function(err) {
+          // fetch failed (CORS, network, abort) — fall back to crossOrigin img tag
+          console.warn('[CertGen] fetch failed, trying img fallback:', err.message);
+          var img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload  = function() { done(img); };
+          img.onerror = function() {
+            console.warn('[CertGen] Photo skipped (CORS/load error):', src);
+            done(null);
+          };
+          img.src = src;
+        });
     });
   }
 
@@ -183,25 +205,10 @@ var CertificateGenerator = (() => {
     _ctx.drawImage(_templateImg, 0, 0);
 
     // 2. Student photo
-    // _loadImage always resolves (never rejects) so a missing CORS header on the
-    // photo URL cannot taint the canvas or interrupt the rest of the render.
+    // _loadImage uses fetch+blob so the canvas is never tainted by cross-origin images.
     if (student.photo) {
       const photoImg = await _loadImage(student.photo, 10000);
-      if (photoImg) {
-        try {
-          _drawPhoto(photoImg);
-          // Probe for taint immediately — if toDataURL throws here the photo
-          // is cross-origin without CORS headers; redraw template to clear it.
-          _canvas.toDataURL('image/jpeg', 0.1);
-        } catch (secErr) {
-          console.warn('[CertGen] Canvas tainted by photo, re-drawing template without photo.');
-          _canvas.width  = _templateImg.naturalWidth;
-          _canvas.height = _templateImg.naturalHeight;
-          _ctx.imageSmoothingEnabled = true;
-          _ctx.imageSmoothingQuality = 'high';
-          _ctx.drawImage(_templateImg, 0, 0);
-        }
-      }
+      if (photoImg) _drawPhoto(photoImg);
     }
 
     // 3. QR code
