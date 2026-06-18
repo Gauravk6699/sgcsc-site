@@ -42,7 +42,9 @@ export default function CertificateVerification() {
   };
 
   const buildStudentCertData = (cert) => ({
-    studentNameCombined: cert.name || "",
+    studentNameCombined: cert.name
+      ? `${cert.name} S/O, D/O, W/O ${cert.fatherName || ""}`.trim()
+      : "",
     courseName: cert.courseName || "",
     grade: cert.grade || "",
     courseDuration: cert.courseDuration || "",
