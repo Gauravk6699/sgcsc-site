@@ -85,7 +85,7 @@ export default function FranchiseResultsList() {
           <h2 className="fw-bold mb-1">Results</h2>
           <small className="text-muted">Manage results for your students</small>
         </div>
-        <div className="d-flex gap-2 align-items-center">
+        <div className="d-flex flex-wrap gap-2 align-items-center">
           <input
             type="text"
             className="form-control form-control-sm"

@@ -116,13 +116,17 @@ export default function FranchiseProfile() {
 
       {/* DOCUMENTS */}
       <Section title="Uploaded Documents">
-        {docLink("Aadhar Front", franchise.aadharFront)}
-        {docLink("Aadhar Back", franchise.aadharBack)}
-        {docLink("PAN Image", franchise.panImage)}
-        {docLink("Institute Photo", franchise.institutePhoto)}
-        {docLink("Owner Signature", franchise.ownerSign)}
-        {docLink("Owner Image", franchise.ownerImage)}
-        {docLink("Certificate", franchise.certificateFile)}
+        <tr>
+          <td colSpan={2}>
+            {docLink("Aadhar Front", franchise.aadharFront)}
+            {docLink("Aadhar Back", franchise.aadharBack)}
+            {docLink("PAN Image", franchise.panImage)}
+            {docLink("Institute Photo", franchise.institutePhoto)}
+            {docLink("Owner Signature", franchise.ownerSign)}
+            {docLink("Owner Image", franchise.ownerImage)}
+            {docLink("Certificate", franchise.certificateFile)}
+          </td>
+        </tr>
       </Section>
 
       {/* META */}

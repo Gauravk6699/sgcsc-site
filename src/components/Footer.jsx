@@ -57,7 +57,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .hover-link:hover {
           color: #ffc107;
           text-decoration: underline;

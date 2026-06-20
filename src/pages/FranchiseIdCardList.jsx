@@ -101,7 +101,7 @@ export default function FranchiseIdCardList() {
           <h2 className="fw-bold mb-1">ID Cards</h2>
           <small className="text-muted">Generate and manage student ID cards</small>
         </div>
-        <div className="d-flex gap-2 align-items-center">
+        <div className="d-flex flex-wrap gap-2 align-items-center">
           <input
             type="text"
             className="form-control form-control-sm"
