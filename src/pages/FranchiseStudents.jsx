@@ -340,7 +340,7 @@ export function FranchiseLayout({ children }) {
   return (
     <div className="d-flex min-vh-100">
       <FranchiseSidebar />
-      <div className="flex-grow-1">
+      <div className="flex-grow-1" style={{ minWidth: 0 }}>
         <div className="container-fluid p-4">
           <button
             type="button"

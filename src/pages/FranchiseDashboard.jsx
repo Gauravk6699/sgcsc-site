@@ -364,7 +364,7 @@ function Sidebar({ franchise }) {
       <Sidebar franchise={franchise} />
 
       {/* Main Content */}
-      <div className="flex-grow-1 bg-light min-vh-100">
+      <div className="flex-grow-1 bg-light min-vh-100" style={{ minWidth: 0 }}>
         <div className="container-fluid p-4">
 
           {/* Header */}
