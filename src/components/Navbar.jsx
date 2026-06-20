@@ -163,7 +163,7 @@ const getFallbackAvatar = (seed = "user") =>
 
             {/* RIGHT SIDE AUTH */}
             {!isLoggedIn && (
-              <NavLink to="/login" className="btn btn-primary ms-3">
+              <NavLink to="/login" className="btn btn-primary ms-lg-3 mt-2 mt-lg-0 w-100 w-lg-auto">
                 Login
               </NavLink>
             )}

@@ -470,6 +470,7 @@ export default function FranchiseFeeReceipt() {
         </div>
 
         {/* Fee Receipt Preview */}
+        <div className="doc-preview-wrapper">
         <div ref={printRef}>
           <style>{`
             .receipt {
@@ -622,6 +623,7 @@ export default function FranchiseFeeReceipt() {
               </div>
             </div>
           )}
+        </div>
         </div>
       </div>
     </FranchiseLayout>

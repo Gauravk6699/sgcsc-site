@@ -141,9 +141,11 @@ function Section({ title, children }) {
     <div className="card shadow-sm mb-4">
       <div className="card-header fw-semibold">{title}</div>
       <div className="card-body">
-        <table className="table table-bordered mb-0">
-          <tbody>{children}</tbody>
-        </table>
+        <div className="table-responsive">
+          <table className="table table-bordered mb-0">
+            <tbody>{children}</tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

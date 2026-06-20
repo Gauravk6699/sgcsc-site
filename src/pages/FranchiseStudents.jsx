@@ -30,10 +30,23 @@ export function FranchiseSidebar() {
 
   return (
     <div
-      className="bg-light border-end vh-100 d-flex flex-column p-3"
-      style={{ width: "260px", position: "fixed", left: 0, top: 0, zIndex: 1000, overflowY: "auto" }}
+      className="offcanvas-lg offcanvas-start bg-light border-end"
+      tabIndex="-1"
+      id="franchiseSidebar"
+      style={{ width: "260px" }}
     >
-      <div className="mb-4">
+      <div className="offcanvas-header d-lg-none">
+        <h2 className="offcanvas-title fs-5 fw-bold text-primary">Franchise Panel</h2>
+        <button
+          type="button"
+          className="btn-close"
+          data-bs-dismiss="offcanvas"
+          data-bs-target="#franchiseSidebar"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div className="offcanvas-body vh-100 d-flex flex-column p-3" style={{ overflowY: "auto" }}>
+      <div className="mb-4 d-none d-lg-block">
         <h2 className="fs-5 fw-bold mb-1 text-primary">Franchise Panel</h2>
       </div>
 
@@ -317,6 +330,7 @@ export function FranchiseSidebar() {
           Logout
         </button>
       </div>
+      </div>
     </div>
   );
 }
@@ -326,8 +340,18 @@ export function FranchiseLayout({ children }) {
   return (
     <div className="d-flex min-vh-100">
       <FranchiseSidebar />
-      <div style={{ marginLeft: "260px", width: "calc(100% - 260px)" }}>
+      <div className="flex-grow-1">
         <div className="container-fluid p-4">
+          <button
+            type="button"
+            className="btn btn-outline-secondary d-lg-none mb-3"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#franchiseSidebar"
+            aria-controls="franchiseSidebar"
+            aria-label="Toggle sidebar"
+          >
+            <i className="bi bi-list me-1"></i> Menu
+          </button>
           {children}
         </div>
       </div>

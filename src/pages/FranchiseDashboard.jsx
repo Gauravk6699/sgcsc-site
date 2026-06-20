@@ -123,10 +123,23 @@ function Sidebar({ franchise }) {
 
   return (
     <div
-      className="bg-light border-end vh-100 d-flex flex-column p-3"
-      style={{ width: "260px", position: "fixed", left: 0, top: 0, zIndex: 1000 }}
+      className="offcanvas-lg offcanvas-start bg-light border-end"
+      tabIndex="-1"
+      id="franchiseSidebar"
+      style={{ width: "260px" }}
     >
-      <div className="mb-4">
+      <div className="offcanvas-header d-lg-none">
+        <h2 className="offcanvas-title fs-5 fw-bold text-primary">Franchise Panel</h2>
+        <button
+          type="button"
+          className="btn-close"
+          data-bs-dismiss="offcanvas"
+          data-bs-target="#franchiseSidebar"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div className="offcanvas-body vh-100 d-flex flex-column p-3">
+      <div className="mb-4 d-none d-lg-block">
         <h2 className="fs-5 fw-bold mb-1 text-primary">Franchise Panel</h2>
         <p className="small text-muted mb-0 text-truncate" title={franchise?.instituteName}>
           {franchise?.instituteName || "Loading..."}
@@ -340,6 +353,7 @@ function Sidebar({ franchise }) {
           Logout
         </button>
       </div>
+      </div>
     </div>
   );
 }
@@ -348,19 +362,31 @@ function Sidebar({ franchise }) {
     <div className="d-flex min-vh-100 bg-light">
       {/* Sidebar */}
       <Sidebar franchise={franchise} />
-      
+
       {/* Main Content */}
-      <div className="flex-grow-1 bg-light min-vh-100" style={{ marginLeft: "260px" }}>
+      <div className="flex-grow-1 bg-light min-vh-100">
         <div className="container-fluid p-4">
 
           {/* Header */}
           <div className="d-flex justify-content-between align-items-start mb-4">
-            <div>
-              <h1 className="h3 mb-1">Franchise Dashboard</h1>
-              <p className="text-muted mb-0">
-                Welcome back,{" "}
-                <strong>{franchise?.instituteName || franchise?.ownerName || "Franchise"}</strong>
-              </p>
+            <div className="d-flex align-items-start gap-2">
+              <button
+                type="button"
+                className="btn btn-outline-secondary d-lg-none"
+                data-bs-toggle="offcanvas"
+                data-bs-target="#franchiseSidebar"
+                aria-controls="franchiseSidebar"
+                aria-label="Toggle sidebar"
+              >
+                <i className="bi bi-list"></i>
+              </button>
+              <div>
+                <h1 className="h3 mb-1">Franchise Dashboard</h1>
+                <p className="text-muted mb-0">
+                  Welcome back,{" "}
+                  <strong>{franchise?.instituteName || franchise?.ownerName || "Franchise"}</strong>
+                </p>
+              </div>
             </div>
             <button
               className="btn btn-outline-secondary"

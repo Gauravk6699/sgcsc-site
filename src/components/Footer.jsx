@@ -61,7 +61,7 @@ export default function Footer() {
         .hover-link:hover {
           color: #ffc107;
           text-decoration: underline;
-        }===
+        }
       `}</style>
     </footer>
   );

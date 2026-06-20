@@ -223,10 +223,9 @@ export default function FranchiseFranchiseCertificateCreate() {
 
       <div
         className="flex-grow-1 bg-light min-vh-100"
-        style={{ marginLeft: "260px" }}
       >
         <div className="container-fluid p-4">
-          <div className="d-flex justify-content-between align-items-center mb-4">
+          <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
             <div>
               <h2 className="mb-1">Create Franchise Certificate</h2>
               <p className="text-muted mb-0">Generate authorization certificate for franchise centers</p>
