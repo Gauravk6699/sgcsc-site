@@ -82,12 +82,33 @@ export default function FranchiseReceiptManagement() {
     }
   };
 
+  // Print via a hidden same-page <iframe> rather than a popup window.
+  // window.open()-based printing is blocked far more aggressively on mobile
+  // browsers (especially iOS Safari and in-app/webview browsers) than on
+  // desktop, which throws once code tries to write into the null window
+  // that comes back. An iframe needs no popup permission at all.
   const printReceipt = (receipt) => {
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const cleanup = () => {
+      if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+    };
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(`
       <!DOCTYPE html>
       <html>
         <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
           <title>Fee Receipt - ${receipt.receiptNo}</title>
           <style>
             body { font-family: Arial, sans-serif; margin: 20px; }
@@ -122,11 +143,19 @@ export default function FranchiseReceiptManagement() {
               </tbody>
             </table>` : ''}
           </div>
-          <script>window.print();</script>
         </body>
       </html>
     `);
-    printWindow.document.close();
+    doc.close();
+
+    setTimeout(() => {
+      try {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      } finally {
+        setTimeout(cleanup, 1000);
+      }
+    }, 200);
   };
 
   return (

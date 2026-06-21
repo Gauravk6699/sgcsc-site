@@ -30,12 +30,12 @@ export function FranchiseSidebar() {
 
   return (
     <div
-      className="offcanvas-lg offcanvas-start bg-light border-end"
+      className="offcanvas-md offcanvas-start bg-light border-end"
       tabIndex="-1"
       id="franchiseSidebar"
       style={{ width: "260px" }}
     >
-      <div className="offcanvas-header d-lg-none">
+      <div className="offcanvas-header d-md-none">
         <h2 className="offcanvas-title fs-5 fw-bold text-primary">Franchise Panel</h2>
         <button
           type="button"
@@ -46,7 +46,7 @@ export function FranchiseSidebar() {
         ></button>
       </div>
       <div className="offcanvas-body vh-100 d-flex flex-column p-3" style={{ overflowY: "auto" }}>
-      <div className="mb-4 d-none d-lg-block">
+      <div className="mb-4 d-none d-md-block">
         <h2 className="fs-5 fw-bold mb-1 text-primary">Franchise Panel</h2>
       </div>
 
@@ -344,7 +344,7 @@ export function FranchiseLayout({ children }) {
         <div className="container-fluid p-4">
           <button
             type="button"
-            className="btn btn-outline-secondary d-lg-none mb-3"
+            className="btn btn-outline-secondary d-md-none mb-3"
             data-bs-toggle="offcanvas"
             data-bs-target="#franchiseSidebar"
             aria-controls="franchiseSidebar"

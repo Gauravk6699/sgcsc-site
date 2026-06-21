@@ -123,12 +123,12 @@ function Sidebar({ franchise }) {
 
   return (
     <div
-      className="offcanvas-lg offcanvas-start bg-light border-end"
+      className="offcanvas-md offcanvas-start bg-light border-end"
       tabIndex="-1"
       id="franchiseSidebar"
       style={{ width: "260px" }}
     >
-      <div className="offcanvas-header d-lg-none">
+      <div className="offcanvas-header d-md-none">
         <h2 className="offcanvas-title fs-5 fw-bold text-primary">Franchise Panel</h2>
         <button
           type="button"
@@ -139,7 +139,7 @@ function Sidebar({ franchise }) {
         ></button>
       </div>
       <div className="offcanvas-body vh-100 d-flex flex-column p-3">
-      <div className="mb-4 d-none d-lg-block">
+      <div className="mb-4 d-none d-md-block">
         <h2 className="fs-5 fw-bold mb-1 text-primary">Franchise Panel</h2>
         <p className="small text-muted mb-0 text-truncate" title={franchise?.instituteName}>
           {franchise?.instituteName || "Loading..."}
@@ -372,7 +372,7 @@ function Sidebar({ franchise }) {
             <div className="d-flex align-items-start gap-2">
               <button
                 type="button"
-                className="btn btn-outline-secondary d-lg-none"
+                className="btn btn-outline-secondary d-md-none"
                 data-bs-toggle="offcanvas"
                 data-bs-target="#franchiseSidebar"
                 aria-controls="franchiseSidebar"
