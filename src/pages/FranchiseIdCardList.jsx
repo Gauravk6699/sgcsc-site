@@ -9,6 +9,82 @@ function fmtDate(d) {
   return Number.isNaN(dt.getTime()) ? "-" : dt.toLocaleDateString("en-IN");
 }
 
+function IDCardViewModal({ show, onClose, card }) {
+  if (!show || !card) return null;
+
+  return (
+    <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+      <div className="modal-dialog modal-lg">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h5 className="modal-title">ID Card Details - {card.studentName}</h5>
+            <button type="button" className="btn-close" onClick={onClose}></button>
+          </div>
+          <div className="modal-body">
+            <div className="row">
+              <div className="col-md-6">
+                <div className="card">
+                  <div className="card-header bg-primary text-white">
+                    <h6 className="mb-0">Student Information</h6>
+                  </div>
+                  <div className="card-body">
+                    <p><strong>Student Name:</strong> {card.studentName}</p>
+                    <p><strong>Father Name:</strong> {card.fatherName}</p>
+                    <p><strong>Mother Name:</strong> {card.motherName || "-"}</p>
+                    <p><strong>Enrollment No:</strong> {card.enrollmentNo}</p>
+                    <p><strong>Date of Birth:</strong> {fmtDate(card.dateOfBirth)}</p>
+                    <p><strong>Mobile No:</strong> {card.mobileNo}</p>
+                    <p><strong>Contact No:</strong> {card.contactNo || "-"}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="col-md-6">
+                <div className="card">
+                  <div className="card-header bg-success text-white">
+                    <h6 className="mb-0">Course & Center Information</h6>
+                  </div>
+                  <div className="card-body">
+                    <p><strong>Course Name:</strong> {card.courseName}</p>
+                    <p><strong>Center Name:</strong> {card.centerName}</p>
+                    <p><strong>Session From:</strong> {card.sessionFrom || "-"}</p>
+                    <p><strong>Session To:</strong> {card.sessionTo || "-"}</p>
+                    <p><strong>Center Mobile:</strong> {card.centerMobileNo || "-"}</p>
+                    <p><strong>Address:</strong> {card.address}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {card.photo && (
+              <div className="row mt-3">
+                <div className="col-12 text-center">
+                  <div className="card">
+                    <div className="card-header">
+                      <h6 className="mb-0">Student Photo</h6>
+                    </div>
+                    <div className="card-body text-center">
+                      <img
+                        src={card.photo}
+                        alt="Student"
+                        className="img-fluid rounded"
+                        style={{ maxHeight: "200px" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-secondary" onClick={onClose}>
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function FranchiseIdCardList() {
   const navigate = useNavigate();
   const [cards, setCards] = useState([]);
@@ -17,6 +93,8 @@ export default function FranchiseIdCardList() {
   const [msgType, setMsgType] = useState("info");
   const [search, setSearch] = useState("");
   const [downloading, setDownloading] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewingCard, setViewingCard] = useState(null);
 
   const fetchCards = async () => {
     setLoading(true);
@@ -63,7 +141,7 @@ export default function FranchiseIdCardList() {
         fatherName: card.fatherName || "",
         motherName: card.motherName || "",
         enrollmentNo: card.enrollmentNo || "",
-        dateOfBirth: card.dateOfBirth ? new Date(card.dateOfBirth).toLocaleDateString("en-IN") : "",
+        dateOfBirth: card.dateOfBirth || "",
         contactNo: card.contactNo || "",
         address: card.address || "",
         mobileNo: card.mobileNo || "",
@@ -81,6 +159,11 @@ export default function FranchiseIdCardList() {
     } finally {
       setDownloading(null);
     }
+  };
+
+  const handleView = (card) => {
+    setViewingCard(card);
+    setShowViewModal(true);
   };
 
   const filtered = useMemo(() => {
@@ -153,6 +236,13 @@ export default function FranchiseIdCardList() {
                       <td>{c.sessionFrom || "-"}{c.sessionTo ? ` – ${c.sessionTo}` : ""}</td>
                       <td>
                         <button
+                          className="btn btn-sm btn-outline-primary me-1"
+                          onClick={() => handleView(c)}
+                          title="View ID Card"
+                        >
+                          View
+                        </button>
+                        <button
                           className="btn btn-sm btn-outline-success me-1"
                           onClick={() => handleDownload(c)}
                           disabled={downloading === c._id}
@@ -180,6 +270,12 @@ export default function FranchiseIdCardList() {
           )}
         </div>
       </div>
+
+      <IDCardViewModal
+        show={showViewModal}
+        onClose={() => { setShowViewModal(false); setViewingCard(null); }}
+        card={viewingCard}
+      />
     </FranchiseLayout>
   );
 }

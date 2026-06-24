@@ -189,6 +189,38 @@ export default function FranchiseCertificateCreate() {
 
     setSaving(true);
     try {
+      // Generate a fresh certificate preview image to store in DB — same as
+      // admin's create flow, so /verify/:certNo has an image before anyone
+      // ever clicks Download.
+      let certificateImage = null;
+      try {
+        if (window.CertificateGenerator) {
+          if (window.CertificateGenerator.config?.templatePath) {
+            await window.CertificateGenerator.loadTemplate(
+              window.CertificateGenerator.config.templatePath
+            );
+          }
+          const studentData = {
+            centerName: franchiseName || "",
+            atcName: franchiseName || "",
+            studentNameCombined: fatherName.trim()
+              ? `${name.trim()} S/O, D/O, W/O ${fatherName.trim()}`
+              : name.trim(),
+            courseName: courseName.trim(),
+            grade: grade.trim(),
+            courseDuration: courseDuration.trim(),
+            coursePeriodFrom,
+            coursePeriodTo,
+            certificateNumber: certificateNumber.trim(),
+            dateOfIssue: issueDate,
+            photo: photo || "",
+          };
+          certificateImage = await window.CertificateGenerator.getDataURL(studentData, 0.4);
+        }
+      } catch (imgErr) {
+        console.warn("Certificate preview image generation failed:", imgErr);
+      }
+
       const payload = {
         name: name.trim(),
         fatherName: fatherName.trim(),
@@ -204,6 +236,7 @@ export default function FranchiseCertificateCreate() {
         issueDate,
         dob: dob || null,
         photo: photo || "",
+        certificateImage,
       };
 
       if (isEditMode && certificateId) {

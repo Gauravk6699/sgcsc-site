@@ -84,7 +84,7 @@ export default function FranchiseCreateSubject() {
         }
 
         const extractedCourseId =
-          typeof s.course === "object"
+          s.course && typeof s.course === "object"
             ? s.course._id || s.course.id
             : s.course || s.courseId || "";
 

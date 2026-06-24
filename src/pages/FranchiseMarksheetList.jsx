@@ -19,6 +19,8 @@ export default function FranchiseMarksheetList() {
   const [msgType, setMsgType] = useState("info");
   const [search, setSearch] = useState("");
   const [downloading, setDownloading] = useState(null);
+  const [viewImage, setViewImage] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
 
   const initGenerator = async () => {
     if (!window.MarksheetGenerator) return null;
@@ -107,6 +109,44 @@ export default function FranchiseMarksheetList() {
     }
   };
 
+  const handleView = async (ms) => {
+    const generator = await initGenerator();
+    if (!generator) {
+      setMsgType("danger");
+      setMsg("Marksheet generator not loaded. Refresh the page and try again.");
+      return;
+    }
+    try {
+      const dataURL = await generator.getDataURL({
+        enrollmentNo: ms.enrollmentNo,
+        studentName: ms.studentName,
+        fatherName: ms.fatherName,
+        motherName: ms.motherName,
+        courseName: ms.courseName,
+        instituteName: ms.instituteName,
+        rollNumber: ms.rollNumber,
+        dob: ms.dob,
+        coursePeriodFrom: ms.coursePeriodFrom,
+        coursePeriodTo: ms.coursePeriodTo,
+        courseDuration: ms.courseDuration,
+        dateOfIssue: ms.dateOfIssue,
+        subjects: ms.subjects,
+        totalTheoryMarks: ms.totalTheoryMarks,
+        totalPracticalMarks: ms.totalPracticalMarks,
+        totalCombinedMarks: ms.totalCombinedMarks,
+        maxTotalMarks: ms.maxTotalMarks,
+        percentage: ms.percentage,
+        overallGrade: ms.overallGrade,
+      });
+      setViewImage(dataURL);
+      setShowViewModal(true);
+    } catch (err) {
+      console.error("Error generating marksheet preview:", err);
+      setMsgType("danger");
+      setMsg("Failed to generate preview: " + err.message);
+    }
+  };
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return marksheets;
@@ -184,6 +224,13 @@ export default function FranchiseMarksheetList() {
                         <td>{fmtDate(m.dateOfIssue)}</td>
                         <td>
                           <button
+                            className="btn btn-sm btn-outline-primary me-1"
+                            onClick={() => handleView(m)}
+                            title="View Marksheet"
+                          >
+                            View
+                          </button>
+                          <button
                             className="btn btn-sm btn-outline-success me-1"
                             onClick={() => handleDownload(m)}
                             disabled={downloading === id}
@@ -206,6 +253,42 @@ export default function FranchiseMarksheetList() {
           )}
         </div>
       </div>
+
+      {showViewModal && (
+        <div
+          className="modal d-block"
+          tabIndex="-1"
+          role="dialog"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+        >
+          <div className="modal-dialog modal-xl modal-dialog-centered" role="document" style={{ maxWidth: "90%", maxHeight: "90vh" }}>
+            <div className="modal-content" style={{ maxHeight: "90vh" }}>
+              <div className="modal-header">
+                <h5 className="modal-title">Marksheet Preview</h5>
+                <button type="button" className="btn-close" onClick={() => setShowViewModal(false)} />
+              </div>
+              <div className="modal-body text-center" style={{ overflow: "auto", backgroundColor: "#f8f9fa" }}>
+                {viewImage ? (
+                  <img
+                    src={viewImage}
+                    alt="Marksheet Preview"
+                    style={{ maxWidth: "100%", maxHeight: "70vh", objectFit: "contain" }}
+                  />
+                ) : (
+                  <div className="py-5 text-muted">
+                    <p>Unable to generate preview.</p>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowViewModal(false)}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </FranchiseLayout>
   );
 }

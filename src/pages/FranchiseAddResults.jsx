@@ -118,8 +118,8 @@ export default function FranchiseAddResults() {
         if (result) {
           setSelectedStudent(result.student?._id || result.student || "");
           setSelectedCourse(
-            typeof result.course === "object" 
-              ? result.course._id 
+            result.course && typeof result.course === "object"
+              ? result.course._id
               : result.course || ""
           );
           setExamSession(result.examSession || "");
@@ -130,7 +130,7 @@ export default function FranchiseAddResults() {
           if (result.subjects && result.subjects.length > 0) {
             const marks = {};
             result.subjects.forEach((sub) => {
-              const subjectId = typeof sub.subject === "object" ? sub.subject._id : sub.subject;
+              const subjectId = sub.subject && typeof sub.subject === "object" ? sub.subject._id : sub.subject;
               marks[subjectId] = {
                 marksObtained: sub.marksObtained || "",
                 practicalMarks: sub.practicalMarks || ""
@@ -153,7 +153,7 @@ export default function FranchiseAddResults() {
 
   /* ================= FILTER SUBJECTS BY COURSE (CLIENT-SIDE) ================= */
   const getSubjectCourseId = (s) =>
-    typeof s.course === "object"
+    s.course && typeof s.course === "object"
       ? String(s.course._id)
       : String(s.course || s.courseId || "");
 
