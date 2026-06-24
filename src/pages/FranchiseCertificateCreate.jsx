@@ -4,20 +4,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import API from "../api/axiosInstance";
 import { FranchiseLayout } from "./FranchiseStudents";
 
-function calculateDuration(fromDate, toDate) {
-  if (!fromDate || !toDate) return "";
-  const from = new Date(fromDate);
-  const to = new Date(toDate);
-  if (isNaN(from) || isNaN(to) || to < from) return "";
-  let years = to.getFullYear() - from.getFullYear();
-  let months = to.getMonth() - from.getMonth();
-  if (months < 0) { years--; months += 12; }
-  const parts = [];
-  if (years > 0) parts.push(`${years} year${years > 1 ? "s" : ""}`);
-  if (months > 0) parts.push(`${months} month${months > 1 ? "s" : ""}`);
-  return parts.join(" ") || "0 months";
-}
-
 export default function FranchiseCertificateCreate() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -54,11 +40,6 @@ export default function FranchiseCertificateCreate() {
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 20 }, (_, i) => currentYear - 10 + i);
-
-  // Auto-calculate duration from period dates
-  useEffect(() => {
-    setCourseDuration(calculateDuration(coursePeriodFrom, coursePeriodTo));
-  }, [coursePeriodFrom, coursePeriodTo]);
 
   // Fetch courses, profile, and students on mount
   useEffect(() => {
@@ -188,6 +169,7 @@ export default function FranchiseCertificateCreate() {
     if (!sessionTo) return showError("Session To is required.");
     if (!coursePeriodFrom) return showError("Course Period From is required.");
     if (!coursePeriodTo) return showError("Course Period To is required.");
+    if (!courseDuration.trim()) return showError("Course Duration is required.");
     if (!grade.trim()) return showError("Grade is required.");
     if (!certificateNumber.trim()) return showError("Certificate Number is required.");
     if (!issueDate) return showError("Issue Date is required.");
@@ -385,11 +367,16 @@ export default function FranchiseCertificateCreate() {
               <input type="date" className="form-control" value={coursePeriodTo} onChange={(e) => setCoursePeriodTo(e.target.value)} required />
             </div>
 
-            {/* Course Duration — auto-calculated */}
             <div className="col-md-6">
-              <label className="form-label">Course Duration</label>
-              <input type="text" className="form-control" value={courseDuration} readOnly placeholder="Auto-calculated from period dates" />
-              <small className="text-muted">Calculated from Course Period dates above</small>
+              <label className="form-label">Course Duration <span className="text-danger">*</span></label>
+              <input
+                type="text"
+                className="form-control"
+                value={courseDuration}
+                onChange={(e) => setCourseDuration(e.target.value)}
+                placeholder="e.g. 1 Year, 6 Months"
+                required
+              />
             </div>
 
             <div className="col-md-6">

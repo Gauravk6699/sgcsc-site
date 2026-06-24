@@ -156,7 +156,10 @@ export default function FranchiseViewStudent() {
                       </span>
                     </p>
                     <p className="mb-1">
-                      <strong>Fees Paid:</strong> {student.feesPaid ? "Yes" : "No"}
+                      <strong>Fees Paid:</strong>{" "}
+                      {(Array.isArray(student.courses) && student.courses.length > 0)
+                        ? (student.courses.every((c) => c.feesPaid) ? "Yes" : "Partial / No")
+                        : (student.feesPaid ? "Yes" : "No")}
                     </p>
                   </>
                 );
@@ -168,9 +171,12 @@ export default function FranchiseViewStudent() {
               <h6 className="border-bottom pb-2 mb-3">Additional Information</h6>
               <p className="mb-1">
                 <strong>Session:</strong>{" "}
-                {student.sessionStart && student.sessionEnd
-                  ? `${new Date(student.sessionStart).toLocaleDateString("en-IN")} - ${new Date(student.sessionEnd).toLocaleDateString("en-IN")}`
-                  : "-"}
+                {(() => {
+                  const start = student.sessionStart || student.courses?.[0]?.sessionStart;
+                  const end = student.sessionEnd || student.courses?.[0]?.sessionEnd;
+                  if (!start && !end) return "-";
+                  return `${start ? new Date(start).toLocaleDateString("en-IN") : "-"} - ${end ? new Date(end).toLocaleDateString("en-IN") : "-"}`;
+                })()}
               </p>
               <p className="mb-1">
                 <strong>Join Date:</strong>{" "}

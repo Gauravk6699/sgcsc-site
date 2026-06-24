@@ -403,16 +403,29 @@ export default function FranchiseStudents() {
     }
   };
 
-  const filteredStudents = students.filter((student) => {
-    const q = search.toLowerCase();
-    return (
-      (student.name?.toLowerCase() || "").includes(q) ||
-      (student.rollNumber?.toLowerCase() || "").includes(q) ||
-      (student.enrollmentNo?.toLowerCase() || "").includes(q) ||
-      (student.mobile?.toLowerCase() || "").includes(q) ||
-      (student.email?.toLowerCase() || "").includes(q)
-    );
-  });
+  const filteredStudents = (() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return students;
+    return students.filter((s) => {
+      const fields = [
+        s.name,
+        s.studentName,
+        s.rollNumber,
+        s.enrollmentNo,
+        s.email,
+        s.mobile,
+        s.state,
+        s.district,
+        s.examPassed,
+        s.board,
+        s.username,
+        s.courseName,
+      ];
+      return fields.some(
+        (v) => typeof v === "string" && v.toLowerCase().includes(term)
+      );
+    });
+  })();
 
   return (
     <FranchiseLayout>

@@ -4,12 +4,19 @@ import { useParams, useNavigate } from "react-router-dom";
 import API from "../api/axiosInstance";
 import { FranchiseLayout } from "./FranchiseStudents";
 
+function fmtDate(d) {
+  if (!d) return "N/A";
+  const dt = new Date(d);
+  return Number.isNaN(dt.getTime()) ? "N/A" : dt.toLocaleDateString("en-IN");
+}
+
 export default function FranchiseViewCertificate() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [certificate, setCertificate] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     const fetchCertificate = async () => {
@@ -56,6 +63,34 @@ export default function FranchiseViewCertificate() {
     );
   }
 
+  const handleDownload = async () => {
+    if (!window.CertificateGenerator) {
+      setError("Certificate generator not loaded. Please refresh the page and try again.");
+      return;
+    }
+    setDownloading(true);
+    try {
+      const certData = {
+        ...certificate,
+        studentNameCombined: certificate.name || "",
+        centerName: certificate.centerName || certificate.atcName || "",
+        dateOfIssue: certificate.issueDate || certificate.dateOfIssue || "",
+        photo: certificate.photo || "",
+      };
+      if (window.CertificateGenerator.config?.templatePath) {
+        await window.CertificateGenerator.loadTemplate(
+          window.CertificateGenerator.config.templatePath
+        );
+      }
+      await window.CertificateGenerator.download(certData);
+    } catch (err) {
+      console.error("Download error:", err);
+      setError("Failed to generate certificate PDF. Please try again.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <FranchiseLayout>
       {/* Header */}
@@ -65,6 +100,13 @@ export default function FranchiseViewCertificate() {
           <small className="text-muted">View certificate information</small>
         </div>
         <div className="d-flex gap-2">
+          <button
+            className="btn btn-success"
+            onClick={handleDownload}
+            disabled={downloading}
+          >
+            {downloading ? "Generating PDF…" : "Download PDF"}
+          </button>
           <button
             className="btn btn-primary"
             onClick={() => navigate(`/franchise/certificates/create?id=${id}`)}
@@ -95,8 +137,8 @@ export default function FranchiseViewCertificate() {
             {/* Student Info */}
             <div className="col-md-6 mb-3">
               <h6 className="border-bottom pb-2 mb-3">Student Information</h6>
-              <p className="mb-1"><strong>Name:</strong> {certificate.student?.name || "N/A"}</p>
-              <p className="mb-1"><strong>Roll Number:</strong> {certificate.rollNumber || "N/A"}</p>
+              <p className="mb-1"><strong>Name:</strong> {certificate.name || "N/A"}</p>
+              <p className="mb-1"><strong>Enrollment Number:</strong> {certificate.enrollmentNumber || "N/A"}</p>
               <p className="mb-1"><strong>Father's Name:</strong> {certificate.fatherName || "N/A"}</p>
               <p className="mb-1"><strong>Course:</strong> {certificate.courseName || "N/A"}</p>
             </div>
@@ -104,14 +146,10 @@ export default function FranchiseViewCertificate() {
             {/* Certificate Info */}
             <div className="col-md-6 mb-3">
               <h6 className="border-bottom pb-2 mb-3">Certificate Information</h6>
-              <p className="mb-1"><strong>Certificate Type:</strong> {certificate.certificateType || "N/A"}</p>
-              <p className="mb-1"><strong>Issue Date:</strong> {certificate.issueDate ? new Date(certificate.issueDate).toLocaleDateString("en-IN") : "N/A"}</p>
               <p className="mb-1"><strong>Certificate Number:</strong> {certificate.certificateNumber || "N/A"}</p>
-              <p className="mb-1"><strong>Status:</strong> 
-                <span className={`badge ms-2 ${certificate.status === "active" ? "bg-success" : "bg-secondary"}`}>
-                  {certificate.status || "N/A"}
-                </span>
-              </p>
+              <p className="mb-1"><strong>Issue Date:</strong> {fmtDate(certificate.issueDate)}</p>
+              <p className="mb-1"><strong>Grade:</strong> {certificate.grade || "N/A"}</p>
+              <p className="mb-1"><strong>Center / ATC:</strong> {certificate.centerName || certificate.atcName || "N/A"}</p>
             </div>
 
             {/* Additional Details */}
@@ -119,30 +157,24 @@ export default function FranchiseViewCertificate() {
               <h6 className="border-bottom pb-2 mb-3">Additional Details</h6>
               <div className="row">
                 <div className="col-md-6">
-                  <p className="mb-1"><strong>Grade:</strong> {certificate.grade || "N/A"}</p>
-                  <p className="mb-1"><strong>Percentage:</strong> {certificate.percentage ? `${certificate.percentage}%` : "N/A"}</p>
+                  <p className="mb-1">
+                    <strong>Session:</strong>{" "}
+                    {certificate.sessionFrom && certificate.sessionTo
+                      ? `${certificate.sessionFrom}–${certificate.sessionTo}`
+                      : "N/A"}
+                  </p>
+                  <p className="mb-1"><strong>Course Duration:</strong> {certificate.courseDuration || "N/A"}</p>
                 </div>
                 <div className="col-md-6">
-                  <p className="mb-1"><strong>Session:</strong> {certificate.session || "N/A"}</p>
-                  <p className="mb-1"><strong>Remarks:</strong> {certificate.remarks || "N/A"}</p>
+                  <p className="mb-1">
+                    <strong>Course Period:</strong>{" "}
+                    {certificate.coursePeriodFrom && certificate.coursePeriodTo
+                      ? `${fmtDate(certificate.coursePeriodFrom)} - ${fmtDate(certificate.coursePeriodTo)}`
+                      : "N/A"}
+                  </p>
                 </div>
               </div>
             </div>
-
-            {/* Certificate Preview */}
-            {certificate.certificateUrl && (
-              <div className="col-12">
-                <h6 className="border-bottom pb-2 mb-3">Certificate Preview</h6>
-                <div className="text-center">
-                  <img
-                    src={certificate.certificateUrl}
-                    alt="Certificate"
-                    className="img-fluid border rounded"
-                    style={{ maxHeight: "400px" }}
-                  />
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
