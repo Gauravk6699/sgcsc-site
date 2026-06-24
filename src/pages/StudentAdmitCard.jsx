@@ -5,7 +5,7 @@ import API from "../api/axiosInstance";
 const AdmitCardGenerator = window.AdmitCardGenerator;
 
 export default function StudentAdmitCard() {
-  const [card, setCard] = useState(null);
+  const [cards, setCards] = useState([]);
   const [templateLoaded, setTemplateLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -13,7 +13,8 @@ export default function StudentAdmitCard() {
     const fetchAdmitCard = async () => {
       try {
         const res = await API.get("/student-profile/admit-card");
-        setCard(res.data.data);
+        const data = res.data.data;
+        setCards(Array.isArray(data) ? data : data ? [data] : []);
       } catch (err) {
         localStorage.removeItem("student_token");
         window.location.href = "/student-login";
@@ -40,7 +41,7 @@ export default function StudentAdmitCard() {
     initGenerator();
   }, []);
 
-  const handleDownload = () => {
+  const handleDownload = (card) => {
     if (typeof AdmitCardGenerator !== 'undefined' && templateLoaded && card) {
       AdmitCardGenerator.download({
         rollNumber: card.rollNumber,
@@ -66,89 +67,93 @@ export default function StudentAdmitCard() {
     return <div className="text-center mt-5">Loading...</div>;
   }
 
-  if (!card) {
+  if (!cards.length) {
     return <p className="text-center mt-5">No admit card available</p>;
   }
 
   return (
     <div className="container my-5">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h3>Admit Card</h3>
-        <button 
-          className="btn btn-primary" 
-          onClick={handleDownload}
-        >
-          <i className="bi bi-download me-2"></i>
-          Download PDF
-        </button>
-      </div>
+      <h3 className="mb-4">Admit Card{cards.length > 1 ? "s" : ""}</h3>
 
-      <div className="card shadow-sm">
-        <div className="card-body">
-          <table className="table table-borderless">
-            <tbody>
-              <tr>
-                <th width="30%" className="text-muted">Roll Number</th>
-                <td>{card.rollNumber || '-'}</td>
-              </tr>
-              <tr>
-                <th className="text-muted">Name</th>
-                <td>{card.name}</td>
-              </tr>
-              {card.fatherName && (
+      {cards.map((card, idx) => (
+        <div className="card shadow-sm mb-4" key={`${card.rollNumber}-${idx}`}>
+          <div className="card-body">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="mb-0">{card.course}</h5>
+              <button
+                className="btn btn-primary"
+                onClick={() => handleDownload(card)}
+              >
+                <i className="bi bi-download me-2"></i>
+                Download PDF
+              </button>
+            </div>
+
+            <table className="table table-borderless mb-0">
+              <tbody>
                 <tr>
-                  <th className="text-muted">Father's Name</th>
-                  <td>{card.fatherName}</td>
+                  <th width="30%" className="text-muted">Roll Number</th>
+                  <td>{card.rollNumber || '-'}</td>
                 </tr>
-              )}
-              {card.motherName && (
                 <tr>
-                  <th className="text-muted">Mother's Name</th>
-                  <td>{card.motherName}</td>
+                  <th className="text-muted">Name</th>
+                  <td>{card.name}</td>
                 </tr>
-              )}
-              <tr>
-                <th className="text-muted">Course</th>
-                <td>{card.course}</td>
-              </tr>
-              {card.institute && (
+                {card.fatherName && (
+                  <tr>
+                    <th className="text-muted">Father's Name</th>
+                    <td>{card.fatherName}</td>
+                  </tr>
+                )}
+                {card.motherName && (
+                  <tr>
+                    <th className="text-muted">Mother's Name</th>
+                    <td>{card.motherName}</td>
+                  </tr>
+                )}
                 <tr>
-                  <th className="text-muted">Institute</th>
-                  <td>{card.institute}</td>
+                  <th className="text-muted">Course</th>
+                  <td>{card.course}</td>
                 </tr>
-              )}
-              {card.center && (
+                {card.institute && (
+                  <tr>
+                    <th className="text-muted">Institute</th>
+                    <td>{card.institute}</td>
+                  </tr>
+                )}
+                {card.center && (
+                  <tr>
+                    <th className="text-muted">Exam Center</th>
+                    <td>{card.center}</td>
+                  </tr>
+                )}
                 <tr>
-                  <th className="text-muted">Exam Center</th>
-                  <td>{card.center}</td>
+                  <th className="text-muted">Exam Date</th>
+                  <td>{card.examDate}</td>
                 </tr>
-              )}
-              <tr>
-                <th className="text-muted">Exam Date</th>
-                <td>{card.examDate}</td>
-              </tr>
-              {card.examTime && (
-                <tr>
-                  <th className="text-muted">Exam Time</th>
-                  <td>{card.examTime}</td>
-                </tr>
-              )}
-              {card.reportingTime && (
-                <tr>
-                  <th className="text-muted">Reporting Time</th>
-                  <td>{card.reportingTime}</td>
-                </tr>
-              )}
-              {card.examDuration && (
-                <tr>
-                  <th className="text-muted">Duration</th>
-                  <td>{card.examDuration}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                {card.examTime && (
+                  <tr>
+                    <th className="text-muted">Exam Time</th>
+                    <td>{card.examTime}</td>
+                  </tr>
+                )}
+                {card.reportingTime && (
+                  <tr>
+                    <th className="text-muted">Reporting Time</th>
+                    <td>{card.reportingTime}</td>
+                  </tr>
+                )}
+                {card.examDuration && (
+                  <tr>
+                    <th className="text-muted">Duration</th>
+                    <td>{card.examDuration}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      ))}
 
       {/* Hidden canvas for template-based admit card generation */}
       <canvas id="admitCardCanvas" style={{ display: 'none' }}></canvas>

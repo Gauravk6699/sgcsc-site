@@ -22,7 +22,7 @@ export default function StudentProfile() {
   const [loadingCertificate, setLoadingCertificate] = useState(false);
   const [certificateError, setCertificateError] = useState("");
   // Admit card state
-  const [admitCard, setAdmitCard] = useState(null);
+  const [admitCards, setAdmitCards] = useState([]);
   const [loadingAdmitCard, setLoadingAdmitCard] = useState(false);
   const [admitCardError, setAdmitCardError] = useState("");
   // ID card state
@@ -259,7 +259,8 @@ export default function StudentProfile() {
     try {
       const res = await API.get("/student-profile/admit-card");
       if (res.data?.success && res.data?.data) {
-        setAdmitCard(res.data.data);
+        const data = res.data.data;
+        setAdmitCards(Array.isArray(data) ? data : [data]);
       }
     } catch (err) {
       console.error("Error fetching admit card:", err);
@@ -267,7 +268,7 @@ export default function StudentProfile() {
   };
 
   // Download admit card using the template
-  const downloadAdmitCard = async () => {
+  const downloadAdmitCard = async (admitCard) => {
     setLoadingAdmitCard(true);
     setAdmitCardError("");
 
@@ -276,7 +277,7 @@ export default function StudentProfile() {
         const admitGen = window.AdmitCardGenerator;
         try {
           await admitGen.loadTemplate('/admit-card-template.jpeg');
-          
+
           const admitCardData = {
             rollNumber: admitCard.rollNumber,
             studentName: admitCard.name,
@@ -291,7 +292,7 @@ export default function StudentProfile() {
             examDuration: admitCard.examDuration || '',
             photo: admitCard.photo || '',
           };
-          
+
           admitGen.download(admitCardData);
         } catch (templateErr) {
           console.error("Admit card template load error:", templateErr);
@@ -825,10 +826,10 @@ export default function StudentProfile() {
           </table>
 
           {/* ================= ADMIT CARD ================= */}
-          {admitCard && (
+          {admitCards.length > 0 && (
             <>
               <h6 className="fw-bold border-bottom pb-2 mb-3 mt-4">
-                My Admit Card
+                My Admit Card{admitCards.length > 1 ? "s" : ""}
               </h6>
               <div className="mb-4">
                 {admitCardError && (
@@ -836,61 +837,63 @@ export default function StudentProfile() {
                     {admitCardError}
                   </div>
                 )}
-                <div className="card">
-                  <div className="card-body">
-                    <div className="row">
-                      {admitCard.photo && (
-                        <div className="col-md-3 text-center mb-3">
-                          <img 
-                            src={admitCard.photo} 
-                            alt="Student" 
-                            className="img-thumbnail" 
-                            style={{ maxWidth: '120px', maxHeight: '120px' }}
-                          />
+                {admitCards.map((admitCard, idx) => (
+                  <div className="card mb-3" key={`${admitCard.rollNumber}-${idx}`}>
+                    <div className="card-body">
+                      <div className="row">
+                        {admitCard.photo && (
+                          <div className="col-md-3 text-center mb-3">
+                            <img
+                              src={admitCard.photo}
+                              alt="Student"
+                              className="img-thumbnail"
+                              style={{ maxWidth: '120px', maxHeight: '120px' }}
+                            />
+                          </div>
+                        )}
+                        <div className={admitCard.photo ? "col-md-9" : "col-12"}>
+                          <table className="table table-sm mb-3">
+                            <tbody>
+                              <tr>
+                                <th>Roll Number</th>
+                                <td>{admitCard.rollNumber || "-"}</td>
+                              </tr>
+                              <tr>
+                                <th>Course</th>
+                                <td>{admitCard.course || "-"}</td>
+                              </tr>
+                              {admitCard.examDate && (
+                                <tr>
+                                  <th>Exam Date</th>
+                                  <td>{admitCard.examDate}</td>
+                                </tr>
+                              )}
+                              {admitCard.examTime && (
+                                <tr>
+                                  <th>Exam Time</th>
+                                  <td>{admitCard.examTime}</td>
+                                </tr>
+                              )}
+                              {admitCard.center && (
+                                <tr>
+                                  <th>Exam Center</th>
+                                  <td>{admitCard.center}</td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
                         </div>
-                      )}
-                      <div className={admitCard.photo ? "col-md-9" : "col-12"}>
-                        <table className="table table-sm mb-3">
-                          <tbody>
-                            <tr>
-                              <th>Roll Number</th>
-                              <td>{admitCard.rollNumber || "-"}</td>
-                            </tr>
-                            <tr>
-                              <th>Course</th>
-                              <td>{admitCard.course || "-"}</td>
-                            </tr>
-                            {admitCard.examDate && (
-                              <tr>
-                                <th>Exam Date</th>
-                                <td>{admitCard.examDate}</td>
-                              </tr>
-                            )}
-                            {admitCard.examTime && (
-                              <tr>
-                                <th>Exam Time</th>
-                                <td>{admitCard.examTime}</td>
-                              </tr>
-                            )}
-                            {admitCard.center && (
-                              <tr>
-                                <th>Exam Center</th>
-                                <td>{admitCard.center}</td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
                       </div>
+                      <button
+                        className="btn btn-primary btn-sm w-100"
+                        onClick={() => downloadAdmitCard(admitCard)}
+                        disabled={loadingAdmitCard}
+                      >
+                        {loadingAdmitCard ? "Downloading..." : "Download Admit Card"}
+                      </button>
                     </div>
-                    <button
-                      className="btn btn-primary btn-sm w-100"
-                      onClick={downloadAdmitCard}
-                      disabled={loadingAdmitCard}
-                    >
-                      {loadingAdmitCard ? "Downloading..." : "Download Admit Card"}
-                    </button>
                   </div>
-                </div>
+                ))}
               </div>
             </>
           )}
