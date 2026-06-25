@@ -4,7 +4,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import API from "../api/axiosInstance";
 
 // Sidebar for Franchise Panel
-export function FranchiseSidebar() {
+export function FranchiseSidebar({ franchise } = {}) {
   const [openMenu, setOpenMenu] = useState(null);
   const navigate = useNavigate();
 
@@ -40,6 +40,11 @@ export function FranchiseSidebar() {
       >
       <div className="mb-4">
         <h2 className="fs-5 fw-bold mb-1 text-primary">Franchise Panel</h2>
+        {franchise && (
+          <p className="small text-muted mb-0 text-truncate" title={franchise?.instituteName}>
+            {franchise?.instituteName || "Loading..."}
+          </p>
+        )}
       </div>
 
       <ul className="nav nav-pills flex-column mb-auto">
@@ -139,7 +144,7 @@ export function FranchiseSidebar() {
         </li>
 
 
-        {/* Certificates */}
+        {/* Student Certificate */}
         <li className="nav-item mb-2">
           <button
             type="button"
@@ -148,7 +153,7 @@ export function FranchiseSidebar() {
           >
             <span className="d-flex align-items-center gap-2">
               <i className="bi bi-award"></i>
-              Certificates
+              Student Certificate
             </span>
             <i className={`bi ${openMenu === "certificates" ? "bi-chevron-down" : "bi-chevron-right"}`}></i>
           </button>
@@ -164,10 +169,28 @@ export function FranchiseSidebar() {
                   View Certificates
                 </NavLink>
               </li>
-              <li className="mb-1"><hr className="my-2" /></li>
+            </ul>
+          )}
+        </li>
+
+        {/* Typing Certificate */}
+        <li className="nav-item mb-2">
+          <button
+            type="button"
+            className="btn btn-toggle w-100 text-start d-flex justify-content-between align-items-center text-dark"
+            onClick={() => toggleMenu("typing-certificates")}
+          >
+            <span className="d-flex align-items-center gap-2">
+              <i className="bi bi-keyboard"></i>
+              Typing Certificate
+            </span>
+            <i className={`bi ${openMenu === "typing-certificates" ? "bi-chevron-down" : "bi-chevron-right"}`}></i>
+          </button>
+          {openMenu === "typing-certificates" && (
+            <ul className="btn-toggle-nav list-unstyled ps-4 pt-2 pb-1">
               <li className="mb-1">
                 <NavLink to="/franchise/typing-certificates/create" className={subLinkClass}>
-                  Typing Certificates
+                  Create Typing Certificate
                 </NavLink>
               </li>
               <li className="mb-1">
