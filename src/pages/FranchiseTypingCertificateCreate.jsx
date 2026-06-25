@@ -107,6 +107,7 @@ export default function FranchiseTypingCertificateCreate() {
 
   const [students, setStudents] = useState([]);
   const [studentId, setStudentId] = useState("");
+  const [photo, setPhoto] = useState("");
 
   const [formData, setFormData] = useState({
     studentName: "",
@@ -169,6 +170,7 @@ export default function FranchiseTypingCertificateCreate() {
             studyCentre: cert.studyCentre || "",
             wordsPerMinute: cert.wordsPerMinute || "",
           });
+          setPhoto(cert.photo || "");
         }
       } catch (err) {
         console.error("Failed to load typing certificate:", err);
@@ -199,6 +201,7 @@ export default function FranchiseTypingCertificateCreate() {
       sessionFrom: sStart ? new Date(sStart).getFullYear().toString() : prev.sessionFrom,
       sessionTo: sEnd ? new Date(sEnd).getFullYear().toString() : prev.sessionTo,
     }));
+    setPhoto(student.photo || "");
   };
 
   const handleSelectStudent = (e) => {
@@ -313,6 +316,7 @@ export default function FranchiseTypingCertificateCreate() {
         grade: formData.grade.trim(),
         studyCentre: formData.studyCentre.trim(),
         wordsPerMinute: formData.wordsPerMinute.trim(),
+        photo: photo || undefined,
       };
 
       if (typingCertificateGenerator) {

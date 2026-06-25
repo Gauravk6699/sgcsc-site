@@ -45,7 +45,7 @@ export default function FranchiseCertificateList() {
     setMsg("");
     try {
       await API.delete(`/franchise/certificates/${id}`);
-      setCertificates((prev) => prev.filter((c) => c._id !== id));
+      setCertificates((prev) => prev.filter((c) => (c._id || c.id) !== id));
       setMsgType("success");
       setMsg("Certificate deleted.");
     } catch (err) {
@@ -64,7 +64,8 @@ export default function FranchiseCertificateList() {
       return;
     }
 
-    setDownloading(cert._id);
+    const certId = cert._id || cert.id;
+    setDownloading(certId);
     setMsg("");
     try {
       // Build the data object the generator expects
@@ -82,11 +83,7 @@ export default function FranchiseCertificateList() {
       };
 
       // Load template if not already loaded
-      if (window.CertificateGenerator.config?.templatePath) {
-        await window.CertificateGenerator.loadTemplate(
-          window.CertificateGenerator.config.templatePath
-        );
-      }
+      await window.CertificateGenerator.loadTemplate('/student-certificate-template.jpeg');
 
       // Trigger PDF download
       await window.CertificateGenerator.download(certData);
@@ -94,13 +91,13 @@ export default function FranchiseCertificateList() {
       // Save a compressed image of the certificate so the QR code is verifiable
       try {
         const imageDataURL = await window.CertificateGenerator.getCompressedDataURL(certData);
-        await API.patch(`/franchise/certificates/${cert._id}/image`, {
+        await API.patch(`/franchise/certificates/${certId}/image`, {
           certificateImage: imageDataURL,
         });
         // Update local state so the QR badge shows
         setCertificates((prev) =>
           prev.map((c) =>
-            c._id === cert._id ? { ...c, certificateImage: imageDataURL } : c
+            (c._id || c.id) === certId ? { ...c, certificateImage: imageDataURL } : c
           )
         );
       } catch (imgErr) {
@@ -165,8 +162,8 @@ export default function FranchiseCertificateList() {
       {msg && <div className={`alert alert-${msgType}`}>{msg}</div>}
 
       <div className="alert alert-info py-2 small mb-3">
-        <strong>QR Verification:</strong> Downloading a certificate automatically saves it for QR code verification at <code>sgcsc.in/verify/&lt;certNo&gt;</code>.
-        Certificates with a QR badge have been saved.
+        <strong>QR Verification:</strong> New certificates are saved for QR code verification at <code>sgcsc.in/verify/&lt;certNo&gt;</code> as soon as they're created.
+        Downloading also re-saves the image. Certificates with a QR badge are verifiable.
       </div>
 
       <div className="card shadow-sm">
@@ -193,8 +190,10 @@ export default function FranchiseCertificateList() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredCertificates.map((c) => (
-                    <tr key={c._id}>
+                  {filteredCertificates.map((c) => {
+                    const cId = c._id || c.id;
+                    return (
+                    <tr key={cId}>
                       <td>
                         <strong>{c.name}</strong>
                         <div className="small text-muted">
@@ -231,10 +230,10 @@ export default function FranchiseCertificateList() {
                         <button
                           className="btn btn-sm btn-outline-success me-1"
                           onClick={() => handleDownload(c)}
-                          disabled={downloading === c._id}
+                          disabled={downloading === cId}
                           title="Download PDF with QR code"
                         >
-                          {downloading === c._id ? (
+                          {downloading === cId ? (
                             <>
                               <span
                                 className="spinner-border spinner-border-sm me-1"
@@ -249,20 +248,21 @@ export default function FranchiseCertificateList() {
                         <button
                           className="btn btn-sm btn-outline-primary me-1"
                           onClick={() =>
-                            navigate(`/franchise/certificates/create?id=${c._id}`)
+                            navigate(`/franchise/certificates/create?id=${cId}`)
                           }
                         >
                           Edit
                         </button>
                         <button
                           className="btn btn-sm btn-outline-danger"
-                          onClick={() => handleDelete(c._id)}
+                          onClick={() => handleDelete(cId)}
                         >
                           Delete
                         </button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

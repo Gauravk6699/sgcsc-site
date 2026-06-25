@@ -10,6 +10,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import './index.css';
 
 import CertificateVerify from './pages/CertificateVerify';
+import TypingCertificateVerify from './pages/TypingCertificateVerify';
 import FranchiseProfile from "./pages/FranchiseProfile";
 import FranchiseCredits from "./pages/FranchiseCredits";
 import FranchiseDashboard from "./pages/FranchiseDashboard";
@@ -165,6 +166,7 @@ export default function App() {
 />
 
 <Route path="/verify/:certNo" element={<CertificateVerify />} />
+<Route path="/verify/typing/:certNo" element={<TypingCertificateVerify />} />
 
 <Route
   path="/student/admit-card"

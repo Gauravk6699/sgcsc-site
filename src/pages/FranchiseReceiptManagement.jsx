@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import API from "../api/axiosInstance";
 import { FranchiseLayout } from "./FranchiseStudents";
+import { printReceiptWindow } from "../utils/receiptPrint";
 
 export default function FranchiseReceiptManagement() {
   const [receipts, setReceipts] = useState([]);
@@ -82,80 +83,21 @@ export default function FranchiseReceiptManagement() {
     }
   };
 
-  // Print via a hidden same-page <iframe> rather than a popup window.
-  // window.open()-based printing is blocked far more aggressively on mobile
-  // browsers (especially iOS Safari and in-app/webview browsers) than on
-  // desktop, which throws once code tries to write into the null window
-  // that comes back. An iframe needs no popup permission at all.
+  // Print using the same shared branded template admin uses, so the printed
+  // receipt is pixel-identical regardless of which portal created it.
   const printReceipt = (receipt) => {
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    document.body.appendChild(iframe);
-
-    const cleanup = () => {
-      if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
-    };
-
-    const doc = iframe.contentWindow.document;
-    doc.open();
-    doc.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <title>Fee Receipt - ${receipt.receiptNo}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .receipt { border: 2px solid #25D366; padding: 20px; max-width: 600px; margin: 0 auto; }
-            .header { text-align: center; margin-bottom: 20px; }
-            .table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            .table th, .table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            .table th { background-color: #f2f2f2; }
-          </style>
-        </head>
-        <body>
-          <div class="receipt">
-            <div class="header">
-              <h2>SGCSC Fee Receipt</h2>
-              <p><strong>Receipt No:</strong> ${receipt.receiptNo}</p>
-            </div>
-            <p><strong>Student Name:</strong> ${receipt.studentName}</p>
-            <p><strong>Enrollment No:</strong> ${receipt.enrollmentNo}</p>
-            <p><strong>Course:</strong> ${receipt.courseName}</p>
-            <p><strong>Session:</strong> ${receipt.sessionStart} - ${receipt.sessionEnd}</p>
-            <p><strong>Total Paid:</strong> ₹${receipt.totalPaid}</p>
-            <p><strong>Total Due:</strong> ₹${receipt.totalDue}</p>
-            <p><strong>Payment Method:</strong> ${receipt.paymentMethod}</p>
-            <p><strong>Date:</strong> ${new Date(receipt.paymentDate).toLocaleDateString()}</p>
-            ${receipt.monthlyPayments?.length > 0 ? `
-            <table class="table">
-              <thead><tr><th>Month</th><th>Date</th><th>Paid</th><th>Due</th><th>Status</th></tr></thead>
-              <tbody>
-                ${receipt.monthlyPayments.map(p => `
-                  <tr><td>${p.month}</td><td>${p.date}</td><td>₹${p.paid}</td><td>₹${p.due}</td><td>${p.status}</td></tr>
-                `).join('')}
-              </tbody>
-            </table>` : ''}
-          </div>
-        </body>
-      </html>
-    `);
-    doc.close();
-
-    setTimeout(() => {
-      try {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-      } finally {
-        setTimeout(cleanup, 1000);
-      }
-    }, 200);
+    printReceiptWindow({
+      studentName: receipt.studentName,
+      fatherName: receipt.student?.fatherName || null,
+      dob: receipt.student?.dob || null,
+      photo: receipt.student?.photo || null,
+      courseName: receipt.courseName,
+      sessionStart: receipt.sessionStart,
+      receiptNo: receipt.receiptNo,
+      monthlyPayments: receipt.monthlyPayments || [],
+      totalPaid: receipt.totalPaid,
+      totalDue: receipt.totalDue,
+    });
   };
 
   return (

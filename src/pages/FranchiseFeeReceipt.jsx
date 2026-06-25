@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import API from "../api/axiosInstance";
 import { FranchiseLayout } from "./FranchiseStudents";
+import { RECEIPT_CSS, printReceiptWindow } from "../utils/receiptPrint";
 
 export default function FranchiseFeeReceipt() {
   const [students, setStudents] = useState([]);
@@ -196,85 +197,32 @@ export default function FranchiseFeeReceipt() {
     }
   };
 
-  // Wait for any images in the doc to finish loading (or fail/timeout) before
-  // printing, so a slow connection can't print before the photo arrives.
-  const printWhenReady = (doc, triggerPrint, maxWaitMs = 3000) => {
-    const imgs = Array.from(doc.images || []);
-    if (imgs.length === 0) {
-      triggerPrint();
-      return;
-    }
-    let remaining = imgs.length;
-    let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
-      triggerPrint();
-    };
-    const onOne = () => {
-      remaining -= 1;
-      if (remaining <= 0) finish();
-    };
-    imgs.forEach((img) => {
-      if (img.complete) onOne();
-      else {
-        img.addEventListener('load', onOne, { once: true });
-        img.addEventListener('error', onOne, { once: true });
-      }
-    });
-    setTimeout(finish, maxWaitMs);
-  };
-
-  // Print via a hidden same-page <iframe> rather than a popup window.
-  // window.open()-based printing is blocked far more aggressively on mobile
-  // browsers (especially iOS Safari and in-app/webview browsers) than on
-  // desktop, which throws once code tries to write into the null window
-  // that comes back. An iframe needs no popup permission at all.
+  // Print using the same shared template admin uses, so the printed receipt
+  // is pixel-identical regardless of which portal created it.
   const handlePrint = () => {
-    const printContent = printRef.current;
-
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    document.body.appendChild(iframe);
-
-    const cleanup = () => {
-      if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
-    };
-
-    const triggerPrint = () => {
-      try {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-      } finally {
-        setTimeout(cleanup, 1000);
-      }
-    };
-
-    const doc = iframe.contentWindow.document;
-    doc.open();
-    doc.write(`
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Fee Receipt</title>
-        <style>
-          ${document.querySelector('style')?.innerHTML || ''}
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        </style>
-      </head>
-      <body>${printContent.innerHTML}</body>
-      </html>
-    `);
-    doc.close();
-
-    printWhenReady(doc, triggerPrint);
+    if (!selectedStudent) return;
+    const { totalPaid, totalDue } = calculateTotals();
+    const monthlyPayments = selectedMonths.map((index) => {
+      const data = monthlyData[index] || {};
+      return {
+        month: months[index],
+        date: data.date || '-',
+        paid: data.paid || 0,
+        due: data.due || 0,
+      };
+    });
+    printReceiptWindow({
+      studentName: selectedStudent.name,
+      fatherName: selectedStudent.fatherName,
+      dob: selectedStudent.dob,
+      photo: selectedStudent.photo,
+      courseName: selectedCourse?.courseName || selectedStudent.courseName,
+      sessionStart,
+      receiptNo,
+      monthlyPayments,
+      totalPaid,
+      totalDue,
+    });
   };
 
   const formatDate = (dateStr) => {
@@ -531,88 +479,7 @@ export default function FranchiseFeeReceipt() {
         {/* Fee Receipt Preview */}
         <div className="doc-preview-wrapper">
         <div ref={printRef}>
-          <style>{`
-            .receipt {
-              width: 490px;
-              margin: 20px auto;
-              background: #fff;
-              border: 4px solid #25D366;
-              padding: 8px;
-              font-size: 12px;
-              position: relative;
-            }
-            .center-name {
-              width: 100%;
-              margin: 5px auto 2px auto;
-              background: #25D366;
-              color: #fff;
-              text-align: center;
-              font-weight: bold;
-              font-size: 16px;
-              padding: 5px 0;
-              border-radius: 10px;
-              letter-spacing: 2px;
-              box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            }
-            .center-address {
-              text-align: center;
-              font-size: 13px;
-              margin-bottom: 10px;
-              color: #444;
-            }
-            .student {
-              display: flex;
-              justify-content: space-between;
-            }
-            .details {
-              flex: 1;
-              margin: 0 8px;
-            }
-            .row {
-              margin-bottom: 3px;
-            }
-            .label {
-              display: inline-block;
-              width: 110px;
-              font-weight: bold;
-            }
-            .fee-title {
-              margin: 8px auto;
-              width: 75%;
-              background: #25D366;
-              color: #fff;
-              text-align: center;
-              font-weight: bold;
-              padding: 8px 0;
-              border-radius: 30px;
-              letter-spacing: 1px;
-              box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            }
-            .photo img {
-              width: 90px;
-              height: 90px;
-              border: 1px solid #000;
-              object-fit: cover;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              font-size: 11px;
-              margin-top: 6px;
-            }
-            th, td {
-              border: 1px solid #000;
-              padding: 3px;
-              text-align: center;
-            }
-            th {
-              background: #eaeaea;
-            }
-            .footer {
-              margin-top: 6px;
-              font-size: 10px;
-            }
-          `}</style>
+          <style>{RECEIPT_CSS}</style>
 
           {selectedStudent ? (
             <div className="receipt">
@@ -626,9 +493,11 @@ export default function FranchiseFeeReceipt() {
               </div>
 
               <div className="student">
-                <div className="photo">
-                  <img src={selectedStudent.photo || "https://via.placeholder.com/90"} alt="Student" />
-                </div>
+                {selectedStudent.photo && (
+                  <div className="photo">
+                    <img src={selectedStudent.photo} alt="Student" />
+                  </div>
+                )}
                 <div className="details" style={{ flex: 1 }}>
                   <div className="row"><span className="label">Student's Name</span>: {selectedStudent.name || "N/A"}</div>
                   <div className="row"><span className="label">Father's Name</span>: {selectedStudent.fatherName || "N/A"}</div>

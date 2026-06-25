@@ -30,6 +30,7 @@ export default function FranchiseCertificateCreate() {
   // State management
   const [courses, setCourses] = useState([]);
   const [students, setStudents] = useState([]);
+  const [marksheets, setMarksheets] = useState([]);
   const [studentId, setStudentId] = useState("");
   const [franchiseName, setFranchiseName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -41,19 +42,33 @@ export default function FranchiseCertificateCreate() {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 20 }, (_, i) => currentYear - 10 + i);
 
-  // Fetch courses, profile, and students on mount
+  // Grade table: 85-100 -> A+, 70-84 -> A, 55-69 -> B, 40-54 -> C (matches admin's CertificateCreate.jsx)
+  const gradeFromPercentage = (pct) => {
+    if (pct == null || isNaN(pct)) return "";
+    const p = Number(pct);
+    if (p >= 85) return "A+";
+    if (p >= 70) return "A";
+    if (p >= 55) return "B";
+    if (p >= 40) return "C";
+    return "";
+  };
+
+  // Fetch courses, profile, students, and marksheets on mount
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const [coursesRes, profileRes, studentsRes] = await Promise.all([
+        const [coursesRes, profileRes, studentsRes, marksheetsRes] = await Promise.all([
           API.get("/franchise/courses"),
           API.get("/franchise-profile/me"),
           API.get("/franchise/students"),
+          API.get("/franchise/marksheets"),
         ]);
         setCourses(Array.isArray(coursesRes.data) ? coursesRes.data : []);
         setStudents(Array.isArray(studentsRes.data) ? studentsRes.data : []);
         const profile = profileRes.data?.data || profileRes.data;
         if (profile?.instituteName) setFranchiseName(profile.instituteName);
+        const marksheetsData = marksheetsRes.data?.data;
+        setMarksheets(Array.isArray(marksheetsData) ? marksheetsData : []);
       } catch (err) {
         console.error("Failed to fetch initial data:", err);
       }
@@ -119,6 +134,16 @@ export default function FranchiseCertificateCreate() {
       setCourseName(cName);
       const duration = resolveCourseDuration(cName, courseRef);
       if (duration) setCourseDuration(duration);
+
+      // Auto-fill grade from an existing marksheet for this student + course
+      const enrollmentNo = student.enrollmentNo || student.rollNumber || "";
+      const ms = marksheets.find(
+        (m) => m.enrollmentNo === enrollmentNo && m.courseName === cName
+      );
+      if (ms) {
+        const gradeValue = gradeFromPercentage(ms.percentage) || ms.overallGrade || "";
+        if (gradeValue) setGrade(gradeValue);
+      }
     }
     if (sStart) {
       setSessionFrom(new Date(sStart).getFullYear().toString());
@@ -208,11 +233,7 @@ export default function FranchiseCertificateCreate() {
       let certificateImage = null;
       try {
         if (window.CertificateGenerator) {
-          if (window.CertificateGenerator.config?.templatePath) {
-            await window.CertificateGenerator.loadTemplate(
-              window.CertificateGenerator.config.templatePath
-            );
-          }
+          await window.CertificateGenerator.loadTemplate('/student-certificate-template.jpeg');
           const studentData = {
             centerName: franchiseName || "",
             atcName: franchiseName || "",

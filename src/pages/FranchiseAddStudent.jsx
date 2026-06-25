@@ -86,6 +86,10 @@ const initialForm = {
 const MAX_PHOTO_SIZE_MB = 2;
 const MAX_PHOTO_BYTES = MAX_PHOTO_SIZE_MB * 1024 * 1024;
 
+// Strips any country code / non-digit characters and keeps the last 10
+// digits — the actual subscriber number regardless of a +91/91/0 prefix.
+const normalizeMobile = (raw) => (raw || "").replace(/\D/g, "").slice(-10);
+
 export default function FranchiseAddStudent() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -120,7 +124,7 @@ export default function FranchiseAddStudent() {
             motherName: student.motherName || "",
             dob: student.dob ? student.dob.split("T")[0] : "",
             email: student.email || "",
-            mobile: student.mobile || "",
+            mobile: normalizeMobile(student.mobile || student.contact),
             state: student.state || "",
             district: student.district || "",
             address: student.address || "",
@@ -204,8 +208,7 @@ export default function FranchiseAddStudent() {
     }
 
     if (name === "mobile") {
-      const digits = value.replace(/\D/g, "").slice(0, 10);
-      setForm((prev) => ({ ...prev, mobile: digits }));
+      setForm((prev) => ({ ...prev, mobile: normalizeMobile(value) }));
       return;
     }
 
