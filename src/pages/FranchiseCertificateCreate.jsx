@@ -96,6 +96,14 @@ export default function FranchiseCertificateCreate() {
     fetchCertificate();
   }, [isEditMode, certificateId]);
 
+  const resolveCourseDuration = (cName, courseRef) => {
+    const match = courses.find((c) => {
+      if (courseRef && (c._id === courseRef || c.id === courseRef)) return true;
+      return cName && (c.title || c.name || "").toLowerCase() === cName.toLowerCase();
+    });
+    return match?.duration || "";
+  };
+
   const applyStudentFields = (student) => {
     setEnrollmentNumber(student.enrollmentNo || "");
     setName(student.name || "");
@@ -104,9 +112,14 @@ export default function FranchiseCertificateCreate() {
     if (student.dob) setDob(new Date(student.dob).toISOString().split("T")[0]);
     const c0 = student.courses?.[0];
     const cName = student.courseName || c0?.courseName || "";
+    const courseRef = student.course || c0?.course;
     const sStart = student.sessionStart || c0?.sessionStart;
     const sEnd = student.sessionEnd || c0?.sessionEnd;
-    if (cName) setCourseName(cName);
+    if (cName) {
+      setCourseName(cName);
+      const duration = resolveCourseDuration(cName, courseRef);
+      if (duration) setCourseDuration(duration);
+    }
     if (sStart) {
       setSessionFrom(new Date(sStart).getFullYear().toString());
       setCoursePeriodFrom(new Date(sStart).toISOString().split("T")[0]);

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import API from "../api/axiosInstance";
 import { Link } from "react-router-dom";
+import { FranchiseLayout } from "./FranchiseStudents";
 
 /* ---------- helpers ---------- */
 const formatDate = (dateString) => {
@@ -77,30 +78,30 @@ export default function FranchiseCredits() {
 
   if (loading) {
     return (
-      <div className="container py-5">
-        <div className="text-center py-5">
-          <div className="spinner-border text-primary" role="status">
+      <FranchiseLayout>
+        <div className="d-flex justify-content-center align-items-center py-5">
+          <div className="spinner-border text-primary me-2" role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
-          <p className="mt-3 text-muted">Loading credits information...</p>
+          Loading credits information...
         </div>
-      </div>
+      </FranchiseLayout>
     );
   }
 
   if (error) {
     return (
-      <div className="container py-5">
+      <FranchiseLayout>
         <div className="alert alert-danger" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-2"></i>
           {error}
         </div>
-      </div>
+      </FranchiseLayout>
     );
   }
 
   return (
-    <div className="container py-5">
+    <FranchiseLayout>
       {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -335,6 +336,6 @@ export default function FranchiseCredits() {
           </div>
         )}
       </div>
-    </div>
+    </FranchiseLayout>
   );
 }

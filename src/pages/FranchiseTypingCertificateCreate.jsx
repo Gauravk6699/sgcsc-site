@@ -105,6 +105,9 @@ export default function FranchiseTypingCertificateCreate() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [students, setStudents] = useState([]);
+  const [studentId, setStudentId] = useState("");
+
   const [formData, setFormData] = useState({
     studentName: "",
     fatherHusbandName: "",
@@ -119,6 +122,26 @@ export default function FranchiseTypingCertificateCreate() {
     studyCentre: "",
     wordsPerMinute: "",
   });
+
+  // Load students + franchise institute name on mount
+  useEffect(() => {
+    const fetchInitial = async () => {
+      try {
+        const [profileRes, studentsRes] = await Promise.all([
+          API.get("/franchise-profile/me"),
+          API.get("/franchise/students"),
+        ]);
+        const profile = profileRes.data?.data || profileRes.data;
+        if (profile?.instituteName) {
+          setFormData((prev) => ({ ...prev, studyCentre: profile.instituteName }));
+        }
+        setStudents(Array.isArray(studentsRes.data) ? studentsRes.data : []);
+      } catch (err) {
+        console.error("Failed to load students/profile:", err);
+      }
+    };
+    fetchInitial();
+  }, []);
 
   // Load existing certificate for edit
   useEffect(() => {
@@ -160,6 +183,51 @@ export default function FranchiseTypingCertificateCreate() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const applyStudentFields = (student) => {
+    if (!student) return;
+    const c0 = student.courses?.[0];
+    const sStart = student.sessionStart || c0?.sessionStart;
+    const sEnd = student.sessionEnd || c0?.sessionEnd;
+    setFormData((prev) => ({
+      ...prev,
+      studentName: student.name || prev.studentName,
+      fatherHusbandName: student.fatherName || prev.fatherHusbandName,
+      motherName: student.motherName || prev.motherName,
+      enrollmentNumber: student.enrollmentNo || student.rollNumber || prev.enrollmentNumber,
+      sessionFrom: sStart ? new Date(sStart).getFullYear().toString() : prev.sessionFrom,
+      sessionTo: sEnd ? new Date(sEnd).getFullYear().toString() : prev.sessionTo,
+    }));
+  };
+
+  const handleSelectStudent = (e) => {
+    const id = e.target.value;
+    setStudentId(id);
+    if (id) {
+      const student = students.find((s) => (s._id || s.id) === id);
+      applyStudentFields(student);
+    }
+  };
+
+  const handleLookupStudent = () => {
+    const q = formData.enrollmentNumber.trim().toLowerCase();
+    if (!q) {
+      setError("Enter an enrollment/roll number to look up.");
+      return;
+    }
+    const student = students.find(
+      (s) =>
+        (s.enrollmentNo || "").toLowerCase() === q ||
+        (s.rollNumber || "").toLowerCase() === q
+    );
+    if (!student) {
+      setError("No student found with that enrollment/roll number.");
+      return;
+    }
+    setError("");
+    setStudentId(student._id || student.id || "");
+    applyStudentFields(student);
   };
 
   const validateForm = () => {
@@ -343,6 +411,35 @@ export default function FranchiseTypingCertificateCreate() {
 
               <form onSubmit={handleSubmit}>
                 <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="form-label">
+                      Select Student (optional - auto-fills details)
+                    </label>
+                    <select
+                      className="form-select"
+                      value={studentId}
+                      onChange={handleSelectStudent}
+                    >
+                      <option value="">Select a student</option>
+                      {students.map((s) => (
+                        <option key={s._id || s.id} value={s._id || s.id}>
+                          {s.name || s.fullName || "Student"}{" "}
+                          {s.rollNumber ? `(${s.rollNumber})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="col-md-6 d-flex align-items-end">
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary w-100"
+                      onClick={handleLookupStudent}
+                    >
+                      Look up by Enrollment Number
+                    </button>
+                  </div>
+
                   <div className="col-md-6">
                     <label className="form-label">
                       Student Name <span className="text-danger">*</span>

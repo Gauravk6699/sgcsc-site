@@ -123,23 +123,15 @@ function Sidebar({ franchise }) {
 
   return (
     <div
-      className="offcanvas-md offcanvas-start bg-light border-end"
-      tabIndex="-1"
+      className="bg-light border-end"
       id="franchiseSidebar"
-      style={{ width: "260px" }}
+      style={{ width: "260px", flexShrink: 0 }}
     >
-      <div className="offcanvas-header d-md-none">
-        <h2 className="offcanvas-title fs-5 fw-bold text-primary">Franchise Panel</h2>
-        <button
-          type="button"
-          className="btn-close"
-          data-bs-dismiss="offcanvas"
-          data-bs-target="#franchiseSidebar"
-          aria-label="Close"
-        ></button>
-      </div>
-      <div className="offcanvas-body vh-100 d-flex flex-column p-3">
-      <div className="mb-4 d-none d-md-block">
+      <div
+        className="d-flex flex-column p-3"
+        style={{ position: "sticky", top: 0, height: "100vh", overflowY: "auto" }}
+      >
+      <div className="mb-4">
         <h2 className="fs-5 fw-bold mb-1 text-primary">Franchise Panel</h2>
         <p className="small text-muted mb-0 text-truncate" title={franchise?.instituteName}>
           {franchise?.instituteName || "Loading..."}
@@ -370,16 +362,6 @@ function Sidebar({ franchise }) {
           {/* Header */}
           <div className="d-flex justify-content-between align-items-start mb-4">
             <div className="d-flex align-items-start gap-2">
-              <button
-                type="button"
-                className="btn btn-outline-secondary d-md-none"
-                data-bs-toggle="offcanvas"
-                data-bs-target="#franchiseSidebar"
-                aria-controls="franchiseSidebar"
-                aria-label="Toggle sidebar"
-              >
-                <i className="bi bi-list"></i>
-              </button>
               <div>
                 <h1 className="h3 mb-1">Franchise Dashboard</h1>
                 <p className="text-muted mb-0">

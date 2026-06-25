@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import API from "../api/axiosInstance";
+import { FranchiseLayout } from "./FranchiseStudents";
 
 /* ---------- helpers ---------- */
 const NA = "—";
@@ -52,22 +53,34 @@ export default function FranchiseProfile() {
   }, []);
 
   if (loading) {
-    return <div className="container my-5 text-center">Loading profile…</div>;
+    return (
+      <FranchiseLayout>
+        <div className="d-flex justify-content-center align-items-center py-5">
+          <div className="spinner-border text-primary me-2" />
+          Loading profile…
+        </div>
+      </FranchiseLayout>
+    );
   }
 
   if (!franchise) {
     return (
-      <div className="container my-5">
+      <FranchiseLayout>
         <div className="alert alert-warning text-center">
           No franchise profile found.
         </div>
-      </div>
+      </FranchiseLayout>
     );
   }
 
   return (
-    <div className="container my-5">
-      <h3 className="mb-4 text-center">Franchise Profile</h3>
+    <FranchiseLayout>
+      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+          <h2 className="fw-bold mb-1">My Profile</h2>
+          <small className="text-muted">View your franchise account details</small>
+        </div>
+      </div>
 
       {/* BASIC INFO */}
       <Section title="Basic Information">
@@ -134,7 +147,7 @@ export default function FranchiseProfile() {
         <Row label="Created At" value={franchise.createdAt?.slice(0, 10) || NA} />
         <Row label="Last Updated" value={franchise.updatedAt?.slice(0, 10) || NA} />
       </Section>
-    </div>
+    </FranchiseLayout>
   );
 }
 
