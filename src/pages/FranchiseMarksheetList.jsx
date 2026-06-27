@@ -267,7 +267,7 @@ export default function FranchiseMarksheetList() {
                 <h5 className="modal-title">Marksheet Preview</h5>
                 <button type="button" className="btn-close" onClick={() => setShowViewModal(false)} />
               </div>
-              <div className="modal-body text-center" style={{ overflow: "auto", backgroundColor: "#f8f9fa" }}>
+              <div className="modal-body text-center" style={{ overflow: "auto", backgroundColor: "rgba(255,255,255,0.06)" }}>
                 {viewImage ? (
                   <img
                     src={viewImage}

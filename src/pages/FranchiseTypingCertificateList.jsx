@@ -45,10 +45,10 @@ function TypingCertificateViewModal({ show, onClose, certificate }) {
             <style>
               * { margin: 0; padding: 0; box-sizing: border-box; }
               body { font-family: 'Times New Roman', serif; padding: 20px; }
-              .certificate { border: 5px double #1a365d; padding: 40px; max-width: 800px; margin: 0 auto; text-align: center; background: #fff; }
-              .certificate h1 { font-size: 32px; color: #1a365d; margin-bottom: 10px; text-transform: uppercase; }
+              .certificate { border: 5px double #123a5e; padding: 40px; max-width: 800px; margin: 0 auto; text-align: center; background: #fff; }
+              .certificate h1 { font-size: 32px; color: #123a5e; margin-bottom: 10px; text-transform: uppercase; }
               .certificate .content { font-size: 16px; line-height: 2; color: #2d3748; }
-              .certificate .name { font-size: 28px; font-weight: bold; color: #1a365d; margin: 20px 0; text-decoration: underline; }
+              .certificate .name { font-size: 28px; font-weight: bold; color: #123a5e; margin: 20px 0; text-decoration: underline; }
               .certificate .details { margin: 30px 0; }
               .certificate .details table { width: 100%; border-collapse: collapse; }
               .certificate .details td { padding: 8px; text-align: left; }

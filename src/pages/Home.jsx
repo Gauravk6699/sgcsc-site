@@ -147,7 +147,7 @@ const renderGrid = (title, items, rounded = true) => {
             style={{
               width: 60,
               height: 3,
-              backgroundColor: "#0d6efd",
+              backgroundColor: "var(--theme-primary)",
               borderRadius: 2,
             }}
           />
@@ -167,7 +167,7 @@ const renderGrid = (title, items, rounded = true) => {
                     height: rounded ? 96 : 140,
                     borderRadius: rounded ? "50%" : 8,
                     overflow: "hidden",
-                    backgroundColor: "#f1f1f1",
+                    backgroundColor: "rgba(255,255,255,0.08)",
                   }}
                 >
                   <SafeImg
@@ -210,7 +210,7 @@ const renderGrid = (title, items, rounded = true) => {
 <section
   className="py-5"
   style={{
-    background: "linear-gradient(135deg, #0d6efd, #084298)",
+    background: "linear-gradient(135deg, var(--theme-primary), var(--theme-info))",
     color: "#fff",
   }}
 >
@@ -243,7 +243,7 @@ const renderGrid = (title, items, rounded = true) => {
 </section>
 
 
-<section className="py-5" style={{ backgroundColor: "#f8f9fa" }}>
+<section className="py-5" style={{ backgroundColor: "rgba(255,255,255,0.06)" }}>
   <div className="container">
     <div className="row text-center mb-5">
       <div className="col">
@@ -263,7 +263,7 @@ const renderGrid = (title, items, rounded = true) => {
             style={{
               width: 70,
               height: 70,
-              backgroundColor: "#0d6efd",
+              backgroundColor: "var(--theme-primary)",
               color: "#fff",
               fontSize: 28,
             }}
@@ -286,7 +286,7 @@ const renderGrid = (title, items, rounded = true) => {
             style={{
               width: 70,
               height: 70,
-              backgroundColor: "#198754",
+              backgroundColor: "var(--theme-success)",
               color: "#fff",
               fontSize: 28,
             }}
@@ -309,7 +309,7 @@ const renderGrid = (title, items, rounded = true) => {
             style={{
               width: 70,
               height: 70,
-              backgroundColor: "#fd7e14",
+              backgroundColor: "var(--theme-info)",
               color: "#fff",
               fontSize: 28,
             }}

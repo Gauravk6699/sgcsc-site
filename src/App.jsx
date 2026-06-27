@@ -8,6 +8,7 @@ import SocialStickyBar from './components/SocialStickyBar';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import './index.css';
+import './theme.css';
 
 import CertificateVerify from './pages/CertificateVerify';
 import TypingCertificateVerify from './pages/TypingCertificateVerify';

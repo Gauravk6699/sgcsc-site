@@ -98,7 +98,7 @@ export default function StudentResults() {
         const matchedMarksheet = marksheets[index] || marksheets[0] || null;
         return (
           <div key={index} className="card shadow-sm mb-4">
-            <div className="card-header d-flex justify-content-between align-items-center" style={{ background: "#0056a3", color: "#fff" }}>
+            <div className="card-header d-flex justify-content-between align-items-center" style={{ background: "var(--theme-primary)", color: "#fff" }}>
               <h5 className="mb-0">
                 <i className="bi bi-mortarboard me-2"></i>
                 {result.courseName || result.course?.name || `Result ${index + 1}`}

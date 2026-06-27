@@ -59,7 +59,7 @@ export default function Footer() {
 
       <style>{`
         .hover-link:hover {
-          color: #ffc107;
+          color: var(--theme-warning);
           text-decoration: underline;
         }
       `}</style>

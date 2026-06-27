@@ -3,7 +3,7 @@ export default function HeroSection() {
     <section
       className="py-5"
       style={{
-        background: "linear-gradient(135deg, #0d6efd 0%, #084298 100%)",
+        background: "linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-info) 100%)",
       }}
     >
       <div className="container text-center text-white">
