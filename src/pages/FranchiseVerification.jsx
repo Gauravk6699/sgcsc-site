@@ -40,6 +40,17 @@ export default function FranchiseVerification() {
     if (e.key === "Enter") verify();
   };
 
+  const handleDownload = () => {
+    const cert = result?.certificate;
+    if (!cert?.certificateImage) return;
+    const link = document.createElement("a");
+    link.href = cert.certificateImage;
+    link.download = `franchise_certificate_${cert.atcCode || instituteId}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="container my-5">
       <h3 className="text-center mb-4">Franchise Verification</h3>
@@ -75,14 +86,36 @@ export default function FranchiseVerification() {
       {result && (
         <div className="mt-4">
           {result.verified ? (
-            <div className="alert alert-success">
-              <strong>Verified Franchise</strong>
-              <div>{result.data.instituteName}</div>
-              <div>{result.data.ownerName}</div>
-              <div>
-                {result.data.district}, {result.data.state}
+            <>
+              <div className="alert alert-success">
+                <strong>Verified Franchise</strong>
+                <div>{result.data.instituteName}</div>
+                <div>{result.data.ownerName}</div>
+                <div>
+                  {result.data.district}, {result.data.state}
+                </div>
               </div>
-            </div>
+
+              {result.certificate?.certificateImage ? (
+                <div className="text-center">
+                  <img
+                    src={result.certificate.certificateImage}
+                    alt="Franchise Certificate"
+                    className="img-fluid border mb-3"
+                    style={{ maxWidth: "100%" }}
+                  />
+                  <div>
+                    <button className="btn btn-success" onClick={handleDownload}>
+                      Download Certificate
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="alert alert-warning">
+                  No certificate is on file for this franchise yet.
+                </div>
+              )}
+            </>
           ) : (
             <div className="alert alert-danger">Franchise not verified</div>
           )}

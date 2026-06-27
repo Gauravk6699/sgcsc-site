@@ -72,7 +72,9 @@ export default function FranchiseCertificateList() {
       const certData = {
         ...cert,
         // studentNameCombined is what the template renders in the "name" field
-        studentNameCombined: cert.name || "",
+        studentNameCombined: cert.fatherName
+          ? `${cert.name} S/O, D/O, W/O ${cert.fatherName}`
+          : (cert.name || ""),
         // centerName is already on the cert record (set from franchise.instituteName at creation)
         centerName: cert.centerName || cert.atcName || "",
         dateOfIssue: cert.issueDate || cert.dateOfIssue || "",

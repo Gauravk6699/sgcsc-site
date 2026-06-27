@@ -72,7 +72,9 @@ export default function FranchiseViewCertificate() {
     try {
       const certData = {
         ...certificate,
-        studentNameCombined: certificate.name || "",
+        studentNameCombined: certificate.fatherName
+          ? `${certificate.name} S/O, D/O, W/O ${certificate.fatherName}`
+          : (certificate.name || ""),
         centerName: certificate.centerName || certificate.atcName || "",
         dateOfIssue: certificate.issueDate || certificate.dateOfIssue || "",
         photo: certificate.photo || "",

@@ -144,64 +144,6 @@ export function FranchiseSidebar({ franchise } = {}) {
         </li>
 
 
-        {/* Student Certificate */}
-        <li className="nav-item mb-2">
-          <button
-            type="button"
-            className="btn btn-toggle w-100 text-start d-flex justify-content-between align-items-center text-dark"
-            onClick={() => toggleMenu("certificates")}
-          >
-            <span className="d-flex align-items-center gap-2">
-              <i className="bi bi-award"></i>
-              Student Certificate
-            </span>
-            <i className={`bi ${openMenu === "certificates" ? "bi-chevron-down" : "bi-chevron-right"}`}></i>
-          </button>
-          {openMenu === "certificates" && (
-            <ul className="btn-toggle-nav list-unstyled ps-4 pt-2 pb-1">
-              <li className="mb-1">
-                <NavLink to="/franchise/certificates/create" className={subLinkClass}>
-                  Create Certificate
-                </NavLink>
-              </li>
-              <li className="mb-1">
-                <NavLink to="/franchise/certificates" end className={subLinkClass}>
-                  View Certificates
-                </NavLink>
-              </li>
-            </ul>
-          )}
-        </li>
-
-        {/* Typing Certificate */}
-        <li className="nav-item mb-2">
-          <button
-            type="button"
-            className="btn btn-toggle w-100 text-start d-flex justify-content-between align-items-center text-dark"
-            onClick={() => toggleMenu("typing-certificates")}
-          >
-            <span className="d-flex align-items-center gap-2">
-              <i className="bi bi-keyboard"></i>
-              Typing Certificate
-            </span>
-            <i className={`bi ${openMenu === "typing-certificates" ? "bi-chevron-down" : "bi-chevron-right"}`}></i>
-          </button>
-          {openMenu === "typing-certificates" && (
-            <ul className="btn-toggle-nav list-unstyled ps-4 pt-2 pb-1">
-              <li className="mb-1">
-                <NavLink to="/franchise/typing-certificates/create" className={subLinkClass}>
-                  Create Typing Certificate
-                </NavLink>
-              </li>
-              <li className="mb-1">
-                <NavLink to="/franchise/typing-certificates" end className={subLinkClass}>
-                  View Typing Certificates
-                </NavLink>
-              </li>
-            </ul>
-          )}
-        </li>
-
         {/* ID Cards */}
         <li className="nav-item mb-2">
           <button
@@ -283,6 +225,64 @@ export function FranchiseSidebar({ franchise } = {}) {
               <li className="mb-1">
                 <NavLink to="/franchise/marksheets" end className={subLinkClass}>
                   View Marksheets
+                </NavLink>
+              </li>
+            </ul>
+          )}
+        </li>
+
+        {/* Student Certificate */}
+        <li className="nav-item mb-2">
+          <button
+            type="button"
+            className="btn btn-toggle w-100 text-start d-flex justify-content-between align-items-center text-dark"
+            onClick={() => toggleMenu("certificates")}
+          >
+            <span className="d-flex align-items-center gap-2">
+              <i className="bi bi-award"></i>
+              Student Certificate
+            </span>
+            <i className={`bi ${openMenu === "certificates" ? "bi-chevron-down" : "bi-chevron-right"}`}></i>
+          </button>
+          {openMenu === "certificates" && (
+            <ul className="btn-toggle-nav list-unstyled ps-4 pt-2 pb-1">
+              <li className="mb-1">
+                <NavLink to="/franchise/certificates/create" className={subLinkClass}>
+                  Create Certificate
+                </NavLink>
+              </li>
+              <li className="mb-1">
+                <NavLink to="/franchise/certificates" end className={subLinkClass}>
+                  View Certificates
+                </NavLink>
+              </li>
+            </ul>
+          )}
+        </li>
+
+        {/* Typing Certificate */}
+        <li className="nav-item mb-2">
+          <button
+            type="button"
+            className="btn btn-toggle w-100 text-start d-flex justify-content-between align-items-center text-dark"
+            onClick={() => toggleMenu("typing-certificates")}
+          >
+            <span className="d-flex align-items-center gap-2">
+              <i className="bi bi-keyboard"></i>
+              Typing Certificate
+            </span>
+            <i className={`bi ${openMenu === "typing-certificates" ? "bi-chevron-down" : "bi-chevron-right"}`}></i>
+          </button>
+          {openMenu === "typing-certificates" && (
+            <ul className="btn-toggle-nav list-unstyled ps-4 pt-2 pb-1">
+              <li className="mb-1">
+                <NavLink to="/franchise/typing-certificates/create" className={subLinkClass}>
+                  Create Typing Certificate
+                </NavLink>
+              </li>
+              <li className="mb-1">
+                <NavLink to="/franchise/typing-certificates" end className={subLinkClass}>
+                  View Typing Certificates
                 </NavLink>
               </li>
             </ul>
