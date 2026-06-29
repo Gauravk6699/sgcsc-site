@@ -491,15 +491,13 @@ export default function StudentProfile() {
       <h3 className="mb-4 text-center">Student Profile</h3>
 
       <div className="card shadow-sm">
-        <div className="card-body">
-
-          {/* ================= PHOTO + BASIC ================= */}
-          <div className="row mb-4 align-items-center">
+        <div className="profile-header">
+          <div className="row align-items-center">
             <div className="col-md-3 text-center">
               <img
                 src={student.photo || DEFAULT_AVATAR_SVG}
                 alt="Student"
-                className="img-fluid rounded border"
+                className="img-fluid rounded border border-2 border-light"
                 style={{ maxHeight: "150px" }}
                 onError={(e) => {
                   e.currentTarget.src = DEFAULT_AVATAR_SVG;
@@ -507,13 +505,16 @@ export default function StudentProfile() {
               />
             </div>
             <div className="col-md-9">
-              <h5 className="fw-bold mb-1">{student.name}</h5>
-              <p className="mb-1 text-muted">{student.courseName || "-"}</p>
-              <p className="mb-0">
+              <h4 className="fw-bold mb-1 text-white">{student.name}</h4>
+              <p className="mb-1 profile-header-sub">{student.courseName || "-"}</p>
+              <p className="mb-0 text-white">
                 <strong>Center:</strong> {student.centerName || "-"}
               </p>
             </div>
           </div>
+        </div>
+
+        <div className="card-body">
 
           {/* ================= PERSONAL DETAILS ================= */}
           <h6 className="fw-bold border-bottom pb-2 mb-3">

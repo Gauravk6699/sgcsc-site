@@ -175,6 +175,17 @@ h1, h2, h3, h4, h5, h6,
   transform: translateY(-8px) scale(1.02);
 }
 
+/* ---- Profile header banner (student profile / ID-card style header) ---- */
+.profile-header {
+  background: linear-gradient(135deg, #1a1433, #2a1f4d, #3a2a66);
+  margin: -1rem -1rem 1.5rem;
+  padding: 1.5rem;
+  border-radius: var(--bs-border-radius) var(--bs-border-radius) 0 0;
+}
+.profile-header-sub {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
 /* Gradient text on big stat/display numbers */
 .display-1, .display-2, .display-3,
 .display-4, .display-5, .display-6 {
