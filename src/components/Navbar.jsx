@@ -84,7 +84,7 @@ const getFallbackAvatar = (seed = "user") =>
             {/* About Company - Hidden for franchise users */}
             {role !== "franchise" && (
               <li className="nav-item">
-                <NavLink className="nav-link" to="/about">About Us</NavLink>
+                <NavLink className="nav-link" style={{ whiteSpace: 'nowrap' }} to="/about">About Us</NavLink>
               </li>
             )}
 
