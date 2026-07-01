@@ -36,8 +36,16 @@ const getFallbackAvatar = (seed = "user") =>
     <nav className="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
       <div className="container">
         {/* Logo */}
-        <NavLink className="navbar-brand fw-bold" to="/">
+        <NavLink className="navbar-brand fw-bold d-flex align-items-center gap-2" to="/">
           <img src="/logo.jpeg" alt="SGCSC Logo" height="50" />
+          <div className="d-flex flex-column lh-1">
+            <span style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '0.04em', color: '#f59e0b' }}>
+              S.G.C.S.C
+            </span>
+            <span style={{ fontSize: '0.55rem', fontWeight: 600, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase' }}>
+              Shree Ganpati Computer And Study Centre
+            </span>
+          </div>
         </NavLink>
 
         {/* Mobile Toggle */}
