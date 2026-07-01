@@ -36,13 +36,22 @@ const getFallbackAvatar = (seed = "user") =>
     <nav className="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
       <div className="container">
         {/* Logo */}
-        <NavLink className="navbar-brand fw-bold d-flex align-items-center gap-2" to="/">
-          <img src="/logo.jpeg" alt="SGCSC Logo" height="50" />
-          <div className="d-flex flex-column lh-1">
-            <span style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '0.04em', color: '#f59e0b' }}>
+        <NavLink className="navbar-brand fw-bold d-flex align-items-center gap-2 text-decoration-none" to="/">
+          <img src="/logo.png" alt="SGCSC Logo" height="54" style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.3))' }} />
+          <div style={{
+            borderTop: '3px solid #e53e3e',
+            borderBottom: '3px solid #e53e3e',
+            background: 'rgba(30, 58, 138, 0.85)',
+            padding: '4px 12px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            lineHeight: 1.2,
+          }}>
+            <span style={{ fontSize: '1.55rem', fontWeight: 900, letterSpacing: '0.06em', color: '#ffffff' }}>
               S.G.C.S.C
             </span>
-            <span style={{ fontSize: '0.55rem', fontWeight: 600, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase' }}>
+            <span style={{ fontSize: '0.52rem', fontWeight: 700, letterSpacing: '0.1em', color: '#ffffff', textTransform: 'uppercase' }}>
               Shree Ganpati Computer And Study Centre
             </span>
           </div>
@@ -76,7 +85,7 @@ const getFallbackAvatar = (seed = "user") =>
             {/* About Company - Hidden for franchise users */}
             {role !== "franchise" && (
               <li className="nav-item">
-                <NavLink className="nav-link" to="/about">About Company</NavLink>
+                <NavLink className="nav-link" to="/about">About Us</NavLink>
               </li>
             )}
 
