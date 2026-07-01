@@ -38,20 +38,19 @@ const getFallbackAvatar = (seed = "user") =>
         {/* Logo */}
         <NavLink className="navbar-brand fw-bold d-flex align-items-center gap-2 text-decoration-none" to="/">
           <img src="/logo.png" alt="SGCSC Logo" height="54" style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.3))' }} />
-          <div style={{
-            borderTop: '3px solid #e53e3e',
-            borderBottom: '3px solid #e53e3e',
-            background: 'rgba(30, 58, 138, 0.85)',
-            padding: '4px 12px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            lineHeight: 1.2,
-          }}>
-            <span style={{ fontSize: '1.55rem', fontWeight: 900, letterSpacing: '0.06em', color: '#ffffff' }}>
+          <div style={{ display: 'inline-block', lineHeight: 1.2 }}>
+            <span style={{
+              display: 'block', whiteSpace: 'nowrap',
+              fontSize: '1.55rem', fontWeight: 900, letterSpacing: '0.05em', color: '#f59e0b',
+            }}>
               S.G.C.S.C
             </span>
-            <span style={{ fontSize: '0.52rem', fontWeight: 700, letterSpacing: '0.1em', color: '#ffffff', textTransform: 'uppercase' }}>
+            <span style={{
+              display: 'block', whiteSpace: 'nowrap',
+              fontSize: '0.5rem', fontWeight: 700, letterSpacing: '0.06em',
+              color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase',
+              transform: 'scaleX(0.68)', transformOrigin: 'left center',
+            }}>
               Shree Ganpati Computer And Study Centre
             </span>
           </div>
