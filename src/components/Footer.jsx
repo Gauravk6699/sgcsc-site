@@ -2,7 +2,7 @@ import React from "react";
 
 export default function Footer() {
   return (
-    <footer className="footer-themed text-light pt-5">
+    <footer className="text-light pt-5">
       <div className="container">
         <div className="row">
 
@@ -58,9 +58,6 @@ export default function Footer() {
       </div>
 
       <style>{`
-        .footer-themed {
-          background: linear-gradient(135deg, #1a1433, #2a1f4d, #3a2a66);
-        }
         .hover-link:hover {
           color: var(--theme-warning);
           text-decoration: underline;
